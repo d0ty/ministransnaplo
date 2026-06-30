@@ -5,18 +5,18 @@
 
 package hu.ministransnaplo.app
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.coil.Coil3Integration
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
+import io.ktor.client.plugins.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 data class AppState(val loggedIn: Boolean = false) {
 }
 
-class AppViewModel: ViewModel() {
+class AppViewModel : ViewModel() {
     val appState: StateFlow<AppState>
         field = MutableStateFlow<AppState>(AppState())
 
@@ -37,15 +37,23 @@ class AppViewModel: ViewModel() {
         install(Coil3Integration)
     }
 
-    fun login() {
+    fun login(emailAddress: String, pass: String, onLoginFinished: (success: Boolean, reason: String?) -> Unit) {
         viewModelScope.launch {
             kotlin.runCatching {
                 supabase.auth.signInWith(Email) {
-                    email = "test@doty.hu"
-                    password = "test"
+                    email = emailAddress
+                    password = pass
                 }
-            }.onSuccess { appState.update { it.copy(loggedIn = true) } }
-                .onFailure {it.printStackTrace() }
+            }.onSuccess {
+                appState.update { it.copy(loggedIn = true) }
+                onLoginFinished(true, null)
+            }.onFailure { it ->
+                when (it) {
+                    is AuthRestException -> onLoginFinished(false, "Hibás belépési adatok!")
+                    is HttpRequestTimeoutException -> onLoginFinished(false, "Időtúllépés")
+                    else -> onLoginFinished(false, "Ismeretlen hiba: ${it.message}")
+                }
+            }
         }
     }
 }

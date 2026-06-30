@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -29,7 +28,7 @@ import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
 @Composable
 @Preview
-fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
+fun App() {
     val navController = rememberNavController()
 
     MaterialTheme(colorScheme = Theme.colorScheme) {
@@ -42,9 +41,9 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
         ) {
             NavHost(navController = navController, startDestination = Login) {
                 composable<Login> {
-                    LoginScreen {
+                    LoginScreen(onLoggedIn = {
                         navController.navigate(LoggedIn)
-                    }
+                    })
                 }
                 composable<LoggedIn> {
                     LoggedInScreen()
