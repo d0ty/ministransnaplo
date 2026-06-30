@@ -8,6 +8,9 @@ package hu.ministransnaplo.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,5 +28,21 @@ fun CardColumn(content: @Composable ColumnScope.() -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         content()
+    }
+}
+
+@Composable
+fun SingleCardScreen(snackbarHostState: SnackbarHostState, content: @Composable ColumnScope.() -> Unit) {
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CardColumn {
+                content()
+            }
+        }
     }
 }

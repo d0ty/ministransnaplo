@@ -23,6 +23,8 @@ import hu.ministransnaplo.app.ui.screens.auth.LoggedIn
 import hu.ministransnaplo.app.ui.screens.auth.LoggedInScreen
 import hu.ministransnaplo.app.ui.screens.auth.Login
 import hu.ministransnaplo.app.ui.screens.auth.LoginScreen
+import hu.ministransnaplo.app.ui.screens.auth.mfa.EnrollScreen
+import hu.ministransnaplo.app.ui.screens.auth.mfa.MFAEnroll
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
@@ -42,11 +44,16 @@ fun App() {
             NavHost(navController = navController, startDestination = Login) {
                 composable<Login> {
                     LoginScreen(onLoggedIn = {
-                        navController.navigate(LoggedIn)
+                        navController.navigate(it)
                     })
                 }
                 composable<LoggedIn> {
                     LoggedInScreen()
+                }
+                composable<MFAEnroll> {
+                    EnrollScreen(onSucess = {
+                        navController.navigate(LoggedIn)
+                    })
                 }
             }
         }

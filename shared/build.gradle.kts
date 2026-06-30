@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026 doty and László Rab
+ * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ */
+
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.*
@@ -61,6 +66,8 @@ kotlin {
             implementation(libs.supabase.storage)
             implementation(libs.supabase.compose.auth.ui)
             implementation(libs.supabase.coil3.integration)
+            implementation(libs.coil3.svg)
+            implementation(libs.coil3.compose)
             implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
