@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,7 +82,12 @@ fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAEnrollViewModel = viewModel
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.height(IntrinsicSize.Min)) {
-            Text(state.value.secret, modifier = Modifier.align(Alignment.CenterVertically))
+            Text(
+                state.value.secret,
+                modifier = Modifier.align(Alignment.CenterVertically).fillMaxWidth(0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             Image(LucideClipboard, contentDescription = "", modifier = Modifier.clickable {
                 viewModel.viewModelScope.launch {
                     clipboard.setClipEntry(state.value.secret.toClipEntry())

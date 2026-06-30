@@ -22,6 +22,7 @@ import hu.ministransnaplo.app.ui.components.SingleCardScreen
 import hu.ministransnaplo.app.ui.components.SubmitButton
 import hu.ministransnaplo.app.ui.icons.AppLogo
 import io.github.jan.supabase.compose.auth.ui.AuthForm
+import io.github.jan.supabase.compose.auth.ui.FormValidator
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import io.github.jan.supabase.compose.auth.ui.email.OutlinedEmailField
 import io.github.jan.supabase.compose.auth.ui.password.OutlinedPasswordField
@@ -38,7 +39,9 @@ fun LoginScreen(onLoggedIn: (NavItem) -> Unit, viewModel: LoginViewModel = viewM
     val snackbarHostState = remember { SnackbarHostState() }
     SingleCardScreen(snackbarHostState = snackbarHostState) {
         Image(AppLogo, contentDescription = null, Modifier.size(96.dp))
+        Spacer(Modifier.height(4.dp))
         Text("Ministráns Napló", fontWeight = FontWeight.Bold, fontSize = 28.sp)
+        Spacer(Modifier.height(12.dp))
         AuthForm {
             var email by remember { mutableStateOf("") }
             var password by remember { mutableStateOf("") }
@@ -46,7 +49,8 @@ fun LoginScreen(onLoggedIn: (NavItem) -> Unit, viewModel: LoginViewModel = viewM
                 OutlinedEmailField(
                     email, onValueChange = { email = it },
                     textStyle = TextStyle(fontSize = 14.sp),
-                    label = { Text(text = "Email", fontSize = 14.sp) }, mandatory = true
+                    label = { Text(text = "Email", fontSize = 14.sp) }, mandatory = true,
+                    validator = FormValidator { true }
                 )
                 OutlinedPasswordField(
                     password, onValueChange = { password = it },

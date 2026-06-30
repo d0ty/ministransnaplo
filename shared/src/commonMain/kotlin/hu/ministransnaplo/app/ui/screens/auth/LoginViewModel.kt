@@ -48,6 +48,7 @@ class LoginViewModel : AppViewModel() {
                     is HttpRequestTimeoutException -> onLoginFinished(LoginResult.SystemError)
                     else -> onLoginFinished(LoginResult.SystemError)
                 }
+                it.printStackTrace()
             }
         }
     }
