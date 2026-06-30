@@ -3,7 +3,7 @@
  * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
  */
 
-package hu.ministransnaplo.app.ui.screens.auth.mfa
+package hu.ministransnaplo.app.ui.screens.auth.mfa.enroll
 
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
@@ -15,17 +15,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class MFAState(
-    val loading: Boolean = true,
-    val factorId: String = "",
-    val qrCode: String = "",
-    val secret: String = "",
-    val challengeId: String = ""
-)
 
-class MFAViewModel : AppViewModel() {
-    val state: StateFlow<MFAState>
-        field = MutableStateFlow<MFAState>(MFAState())
+class MFAEnrollViewModel : AppViewModel() {
+    data class State(
+        val loading: Boolean = true,
+        val factorId: String = "",
+        val qrCode: String = "",
+        val secret: String = "",
+        val challengeId: String = ""
+    )
+
+    val state: StateFlow<State>
+        field = MutableStateFlow<State>(State())
 
     init {
         viewModelScope.launch {
@@ -36,7 +37,7 @@ class MFAViewModel : AppViewModel() {
             val factor = supabase.auth.mfa.enroll(FactorType.TOTP)
             val challengeId = supabase.auth.mfa.createChallenge(factor.id).id
             state.update {
-                MFAState(
+                State(
                     false,
                     factorId = factor.id,
                     qrCode = factor.data.qrCode,

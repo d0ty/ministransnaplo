@@ -3,7 +3,7 @@
  * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
  */
 
-package hu.ministransnaplo.app.ui.screens.auth.mfa
+package hu.ministransnaplo.app.ui.screens.auth.mfa.enroll
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -43,7 +43,7 @@ object MFAEnroll : NavItem {}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAViewModel = viewModel { MFAViewModel() }) {
+fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAEnrollViewModel = viewModel { MFAEnrollViewModel() }) {
     val state = viewModel.state.collectAsStateWithLifecycle()
     val imageLoader = ImageLoader.Builder(LocalPlatformContext.current)
         .components {

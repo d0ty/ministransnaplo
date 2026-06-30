@@ -14,12 +14,13 @@ import io.github.jan.supabase.auth.mfa.AuthenticatorAssuranceLevel
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.ktor.client.plugins.*
 import kotlinx.coroutines.launch
-import hu.ministransnaplo.app.ui.screens.auth.mfa.MFAEnroll as MFAEnrollDest
+import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge as MFAChallengeDest
+import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll as MFAEnrollDest
 
 class LoginViewModel : AppViewModel() {
     enum class LoginResult(val navItem: NavItem? = null, val success: Boolean, val errorMessage: String?) {
         MFAEnroll(MFAEnrollDest, true, null),
-        MFAChallenge(LoggedIn, true, null), //TODO: when mfa challenge gets implemented navigate there
+        MFAChallenge(MFAChallengeDest, true, null),
         AuthError(null, false, "Hiba a belépéskor"),
         SystemError(null, false, "Hiba a beléptetés közben. Kérjük próbáld újra kicsit később!")
     }
@@ -33,12 +34,15 @@ class LoginViewModel : AppViewModel() {
                 }
             }.onSuccess {
                 supabase.auth.mfa.getAuthenticatorAssuranceLevel().let { assuranceLevel ->
-                    when (assuranceLevel.current) {
-                        AuthenticatorAssuranceLevel.AAL1 -> onLoginFinished(LoginResult.MFAEnroll)
-                        AuthenticatorAssuranceLevel.AAL2 -> onLoginFinished(LoginResult.MFAChallenge)
-                    }
+                    onLoginFinished(
+                        if (assuranceLevel.current == AuthenticatorAssuranceLevel.AAL1 &&
+                            assuranceLevel.next == AuthenticatorAssuranceLevel.AAL1
+                        )
+                            LoginResult.MFAEnroll
+                        else LoginResult.MFAChallenge
+                    )
                 }
-            }.onFailure { it ->
+            }.onFailure {
                 when (it) {
                     is AuthRestException -> onLoginFinished(LoginResult.AuthError)
                     is HttpRequestTimeoutException -> onLoginFinished(LoginResult.SystemError)
