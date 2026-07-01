@@ -35,15 +35,17 @@ fun ChallengeScreen(onSucess: () -> Unit, viewModel: MFAChallengeViewModel = vie
     var mfaCode by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     SingleCardScreen(snackbarHostState = snackbarHostState) {
-        state.value.guard?.ProfilePicture(viewModel.supabase)
+        state.value.guard?.ProfilePicture(viewModel.supabase, 128.dp)
+        Spacer(Modifier.height(16.dp))
         Text(
             "Üdvözlet ${state.value.displayName}! \n Kérlek add meg a hitelesítő alkalmazás" +
                     " által generált kódot a belépéshez.",
-            fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.fillMaxWidth(),
+            fontSize = 18.sp, fontWeight = FontWeight.Medium, modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(value = mfaCode, onValueChange = { mfaCode = it }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
         SubmitButton(label = "Belépés", modifier = Modifier.fillMaxWidth(), onClick = {
             viewModel.verifyChallenge(mfaCode) { success ->
                 if (!success) {
