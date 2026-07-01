@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 doty and László Rab
- * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
  */
 
 package hu.ministransnaplo.app.ui.screens.auth.mfa.challenge
@@ -35,6 +35,7 @@ fun ChallengeScreen(onSucess: () -> Unit, viewModel: MFAChallengeViewModel = vie
     var mfaCode by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     SingleCardScreen(snackbarHostState = snackbarHostState) {
+        state.value.guard?.ProfilePicture(viewModel.supabase)
         Text(
             "Üdvözlet ${state.value.displayName}! \n Kérlek add meg a hitelesítő alkalmazás" +
                     " által generált kódot a belépéshez.",
