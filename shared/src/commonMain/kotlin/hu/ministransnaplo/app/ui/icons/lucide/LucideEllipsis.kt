@@ -4,6 +4,7 @@
  */
 
 package hu.ministransnaplo.app.ui.icons.lucide
+
 /*
 ISC License
 
@@ -56,57 +57,59 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
+import hu.ministransnaplo.app.ui.icons.IconVariants
 
-val LucideClipboard: ImageVector
-    get() {
-        if (_LucideClipboard != null) return _LucideClipboard!!
-
-        _LucideClipboard = ImageVector.Builder(
-            name = "clipboard",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(9f, 2f)
-                horizontalLineTo(15f)
-                arcTo(1f, 1f, 0f, false, true, 16f, 3f)
-                verticalLineTo(5f)
-                arcTo(1f, 1f, 0f, false, true, 15f, 6f)
-                horizontalLineTo(9f)
-                arcTo(1f, 1f, 0f, false, true, 8f, 5f)
-                verticalLineTo(3f)
-                arcTo(1f, 1f, 0f, false, true, 9f, 2f)
-                close()
-            }
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(16f, 4f)
-                horizontalLineToRelative(2f)
-                arcToRelative(2f, 2f, 0f, false, true, 2f, 2f)
-                verticalLineToRelative(14f)
-                arcToRelative(2f, 2f, 0f, false, true, -2f, 2f)
-                horizontalLineTo(6f)
-                arcToRelative(2f, 2f, 0f, false, true, -2f, -2f)
-                verticalLineTo(6f)
-                arcToRelative(2f, 2f, 0f, false, true, 2f, -2f)
-                horizontalLineToRelative(2f)
-            }
-        }.build()
-
-        return _LucideClipboard!!
+private fun getLucideEllipsis(stroke: Color, iconSuffix: String = ""): ImageVector = ImageVector.Builder(
+    name = "ellipsis$iconSuffix",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f
+).apply {
+    path(
+        fill = SolidColor(Color.Transparent),
+        stroke = SolidColor(stroke),
+        strokeLineWidth = 2f,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
+    ) {
+        moveTo(13f, 12f)
+        arcTo(1f, 1f, 0f, false, true, 12f, 13f)
+        arcTo(1f, 1f, 0f, false, true, 11f, 12f)
+        arcTo(1f, 1f, 0f, false, true, 13f, 12f)
+        close()
     }
+    path(
+        fill = SolidColor(Color.Transparent),
+        stroke = SolidColor(stroke),
+        strokeLineWidth = 2f,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
+    ) {
+        moveTo(20f, 12f)
+        arcTo(1f, 1f, 0f, false, true, 19f, 13f)
+        arcTo(1f, 1f, 0f, false, true, 18f, 12f)
+        arcTo(1f, 1f, 0f, false, true, 20f, 12f)
+        close()
+    }
+    path(
+        fill = SolidColor(Color.Transparent),
+        stroke = SolidColor(stroke),
+        strokeLineWidth = 2f,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
+    ) {
+        moveTo(6f, 12f)
+        arcTo(1f, 1f, 0f, false, true, 5f, 13f)
+        arcTo(1f, 1f, 0f, false, true, 4f, 12f)
+        arcTo(1f, 1f, 0f, false, true, 6f, 12f)
+        close()
+    }
+}.build()
 
-private var _LucideClipboard: ImageVector? = null
+object LucideEllipsis : IconVariants {
+    override val darkIcon: ImageVector
+        get() = getLucideEllipsis(stroke = Color.Black, iconSuffix = "")
+    override val lightIcon: ImageVector
+        get() = getLucideEllipsis(stroke = Color.White, iconSuffix = "-light")
+}

@@ -56,57 +56,54 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
+import hu.ministransnaplo.app.ui.icons.IconVariants
 
-val LucideClipboard: ImageVector
-    get() {
-        if (_LucideClipboard != null) return _LucideClipboard!!
 
-        _LucideClipboard = ImageVector.Builder(
-            name = "clipboard",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(9f, 2f)
-                horizontalLineTo(15f)
-                arcTo(1f, 1f, 0f, false, true, 16f, 3f)
-                verticalLineTo(5f)
-                arcTo(1f, 1f, 0f, false, true, 15f, 6f)
-                horizontalLineTo(9f)
-                arcTo(1f, 1f, 0f, false, true, 8f, 5f)
-                verticalLineTo(3f)
-                arcTo(1f, 1f, 0f, false, true, 9f, 2f)
-                close()
-            }
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(16f, 4f)
-                horizontalLineToRelative(2f)
-                arcToRelative(2f, 2f, 0f, false, true, 2f, 2f)
-                verticalLineToRelative(14f)
-                arcToRelative(2f, 2f, 0f, false, true, -2f, 2f)
-                horizontalLineTo(6f)
-                arcToRelative(2f, 2f, 0f, false, true, -2f, -2f)
-                verticalLineTo(6f)
-                arcToRelative(2f, 2f, 0f, false, true, 2f, -2f)
-                horizontalLineToRelative(2f)
-            }
-        }.build()
-
-        return _LucideClipboard!!
+private fun getLucideHouse(stroke: Color, iconSuffix: String = ""): ImageVector = ImageVector.Builder(
+    name = "house$iconSuffix",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f
+).apply {
+    path(
+        fill = SolidColor(Color.Transparent),
+        stroke = SolidColor(stroke),
+        strokeLineWidth = 2f,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
+    ) {
+        moveTo(15f, 21f)
+        verticalLineToRelative(-8f)
+        arcToRelative(1f, 1f, 0f, false, false, -1f, -1f)
+        horizontalLineToRelative(-4f)
+        arcToRelative(1f, 1f, 0f, false, false, -1f, 1f)
+        verticalLineToRelative(8f)
     }
+    path(
+        fill = SolidColor(Color.Transparent),
+        stroke = SolidColor(stroke),
+        strokeLineWidth = 2f,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
+    ) {
+        moveTo(3f, 10f)
+        arcToRelative(2f, 2f, 0f, false, true, 0.709f, -1.528f)
+        lineToRelative(7f, -6f)
+        arcToRelative(2f, 2f, 0f, false, true, 2.582f, 0f)
+        lineToRelative(7f, 6f)
+        arcTo(2f, 2f, 0f, false, true, 21f, 10f)
+        verticalLineToRelative(9f)
+        arcToRelative(2f, 2f, 0f, false, true, -2f, 2f)
+        horizontalLineTo(5f)
+        arcToRelative(2f, 2f, 0f, false, true, -2f, -2f)
+        close()
+    }
+}.build()
 
-private var _LucideClipboard: ImageVector? = null
+object LucideHouse : IconVariants {
+    override val darkIcon: ImageVector
+        get() = getLucideHouse(Color.Black, "")
+    override val lightIcon: ImageVector
+        get() = getLucideHouse(Color.White, "-light")
+}

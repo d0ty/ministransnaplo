@@ -4,6 +4,7 @@
  */
 
 package hu.ministransnaplo.app.ui.icons.lucide
+
 /*
 ISC License
 
@@ -49,6 +50,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -56,57 +58,119 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
+import hu.ministransnaplo.app.ui.icons.IconVariants
 
-val LucideClipboard: ImageVector
-    get() {
-        if (_LucideClipboard != null) return _LucideClipboard!!
-
-        _LucideClipboard = ImageVector.Builder(
-            name = "clipboard",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(9f, 2f)
-                horizontalLineTo(15f)
-                arcTo(1f, 1f, 0f, false, true, 16f, 3f)
-                verticalLineTo(5f)
-                arcTo(1f, 1f, 0f, false, true, 15f, 6f)
-                horizontalLineTo(9f)
-                arcTo(1f, 1f, 0f, false, true, 8f, 5f)
-                verticalLineTo(3f)
-                arcTo(1f, 1f, 0f, false, true, 9f, 2f)
-                close()
-            }
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(16f, 4f)
-                horizontalLineToRelative(2f)
-                arcToRelative(2f, 2f, 0f, false, true, 2f, 2f)
-                verticalLineToRelative(14f)
-                arcToRelative(2f, 2f, 0f, false, true, -2f, 2f)
-                horizontalLineTo(6f)
-                arcToRelative(2f, 2f, 0f, false, true, -2f, -2f)
-                verticalLineTo(6f)
-                arcToRelative(2f, 2f, 0f, false, true, 2f, -2f)
-                horizontalLineToRelative(2f)
-            }
-        }.build()
-
-        return _LucideClipboard!!
+private fun getLucidePodium(stroke: Color, iconSuffix: String = ""): ImageVector = ImageVector.Builder(
+    name = "podium$iconSuffix",
+    defaultWidth = 24.0.dp,
+    defaultHeight = 24.0.dp,
+    viewportWidth = 24.0f,
+    viewportHeight = 24.0f,
+).apply {
+    path(
+        stroke = SolidColor(stroke),
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round,
+        strokeLineWidth = 2.0f,
+    ) {
+        moveTo(x = 12.0f, y = 6.0f)
+        verticalLineTo(y = 2.0f)
+        horizontalLineToRelative(dx = -1.0f)
+        moveTo(x = 9.0f, y = 15.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = false,
+            dx1 = -1.0f,
+            dy1 = -1.0f
+        )
+        horizontalLineTo(x = 4.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = false,
+            dx1 = -1.0f,
+            dy1 = 1.0f
+        )
+        verticalLineToRelative(dy = 5.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = false,
+            dx1 = 1.0f,
+            dy1 = 1.0f
+        )
+        horizontalLineToRelative(dx = 16.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = false,
+            dx1 = 1.0f,
+            dy1 = -1.0f
+        )
+        verticalLineToRelative(dy = -3.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = false,
+            dx1 = -1.0f,
+            dy1 = -1.0f
+        )
+        horizontalLineToRelative(dx = -4.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = false,
+            dx1 = -1.0f,
+            dy1 = 1.0f
+        )
     }
+    path(
+        stroke = SolidColor(stroke),
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round,
+        strokeLineWidth = 2.0f,
+    ) {
+        moveTo(x = 9.0f, y = 21.0f)
+        verticalLineTo(y = 11.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = true,
+            dx1 = 1.0f,
+            dy1 = -1.0f
+        )
+        horizontalLineToRelative(dx = 4.0f)
+        arcToRelative(
+            a = 1.0f,
+            b = 1.0f,
+            theta = 0.0f,
+            isMoreThanHalf = false,
+            isPositiveArc = true,
+            dx1 = 1.0f,
+            dy1 = 1.0f
+        )
+        verticalLineToRelative(dy = 10.0f)
+    }
+}.build()
 
-private var _LucideClipboard: ImageVector? = null
+object LucidePodium : IconVariants {
+    override val darkIcon: ImageVector
+        get() = getLucidePodium(stroke = Color.Black, iconSuffix = "")
+    override val lightIcon: ImageVector
+        get() = getLucidePodium(stroke = Color.White, iconSuffix = "-light")
+}
