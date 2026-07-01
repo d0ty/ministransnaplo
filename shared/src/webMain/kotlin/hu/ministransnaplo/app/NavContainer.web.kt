@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 internal fun MenuItem(navMenuItem: NavMenuItem, onNavigation: (NavItem) -> Unit) {
     val hasSubmenu = navMenuItem.submenuItems.isNotEmpty()
     var expanded by remember { mutableStateOf(false) }
-    Column(Modifier.padding(0.dp, 4.dp)) {
+    Column(Modifier.padding(0.dp, 8.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -73,10 +73,10 @@ internal fun MenuItem(navMenuItem: NavMenuItem, onNavigation: (NavItem) -> Unit)
         }
         AnimatedVisibility(expanded) {
             Column {
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 navMenuItem.submenuItems.forEach { submenuItem ->
                     Row(
-                        Modifier.fillMaxWidth().padding(46.dp, 0.dp)
+                        Modifier.fillMaxWidth().padding(48.dp, 4.dp)
                             .clickable { onNavigation(submenuItem.destination) },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -122,7 +122,10 @@ fun UserInfo(userState: AppViewModel.UserState) {
 @Composable
 fun ProfileAction(icon: ImageVector, label: String, onClicked: () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().clickable { onClicked() }, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().clickable { onClicked() }.padding(24.dp, 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Image(icon, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(10.dp))
             Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium)
@@ -195,7 +198,7 @@ actual fun NavContainer(
             }
 
             // Content
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).padding(32.dp)) {
                 content()
             }
         }
@@ -207,12 +210,14 @@ actual fun NavContainer(
             ) {
                 Surface(
                     modifier = Modifier.width(with(LocalDensity.current) { anchorBounds.width.toDp() }),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     color = Color(0xFF1E1E28),
                     shadowElevation = 8.dp
                 ) {
                     Column {
-                        UserInfo(userState)
+                        Column(Modifier.padding(16.dp, 16.dp, 16.dp, 4.dp)) {
+                            UserInfo(userState)
+                        }
                         HorizontalDivider(Modifier.fillMaxWidth(), 1.dp, Color(0xFF404040))
                         ProfileAction(LucideUserRoundKey, "2. faktor visszaállítása", onClicked = {
                             profileExpanded = false
@@ -253,7 +258,11 @@ class AboveAnchorLeftAligned(
         }
 
         x = x.coerceIn(0f, (windowSize.width - popupContentSize.width).coerceAtLeast(0).toFloat())
-        y = y.coerceIn(0f, (windowSize.height - popupContentSize.height).coerceAtLeast(0).toFloat())
+        y = y.coerceIn(
+            0f,
+            (capturedAnchorBounds.bottom.toInt() - popupContentSize.height).coerceAtLeast(0)
+                .toFloat()
+        )
 
         return IntOffset(x.toInt(), y.toInt())
     }
