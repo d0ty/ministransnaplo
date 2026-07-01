@@ -19,8 +19,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import hu.ministransnaplo.app.ui.Theme
-import hu.ministransnaplo.app.ui.screens.auth.LoggedIn
-import hu.ministransnaplo.app.ui.screens.auth.LoggedInScreen
+import hu.ministransnaplo.app.ui.screens.LoggedIn
+import hu.ministransnaplo.app.ui.screens.LoggedInScreen
 import hu.ministransnaplo.app.ui.screens.auth.Login
 import hu.ministransnaplo.app.ui.screens.auth.LoginScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.ChallengeScreen
