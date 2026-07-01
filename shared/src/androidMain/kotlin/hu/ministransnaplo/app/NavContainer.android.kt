@@ -48,13 +48,17 @@ internal object MenuItem : NavMenuItem {
     override val title: String = "Menü"
     override val icon: IconVariants = LucideEllipsis
     override val destination: NavItem = LoggedIn
-    override val submenuItems: Array<NavSubmenuItem>
-        get() = emptyArray()
+    override val submenuItems: ArrayList<NavSubmenuItem>
+        get() = arrayListOf()
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-actual fun NavContainer(onNavigation: (NavItem) -> Unit, content: @Composable () -> Unit) {
+actual fun NavContainer(
+    viewModel: AppViewModel,
+    onNavigation: (NavItem) -> Unit,
+    content: @Composable () -> Unit,
+) {
     var activeMenu: NavMenuItem by remember { mutableStateOf(NavMenuItems.Home) }
     Scaffold(bottomBar = {
         Row(

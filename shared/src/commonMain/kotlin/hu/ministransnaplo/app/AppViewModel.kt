@@ -1,24 +1,66 @@
 /*
  * Copyright 2026 doty and László Rab
- * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
  */
 
 package hu.ministransnaplo.app
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import hu.ministransnaplo.app.models.Guard
+import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.coil.Coil3Integration
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.Storage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 open class AppViewModel : ViewModel() {
+    data class UserState(
+        val loggedIn: Boolean = false,
+        val displayName: String = "Username",
+        val email: String = "email@address",
+        val guard: Guard? = null,
+    )
+
+    val userState: StateFlow<UserState>
+        field = MutableStateFlow(UserState())
+
+
+    @OptIn(SupabaseExperimental::class)
     val supabase = createSupabaseClient(Secrets.supa_url, Secrets.supa_key) {
         install(Postgrest)
         install(Auth)
         install(Functions)
         install(Storage)
         install(Coil3Integration)
+    }.also { supa ->
+        viewModelScope.launch {
+            supa.auth.sessionStatus.collect { event ->
+                if (event !is SessionStatus.Authenticated && event !is SessionStatus.NotAuthenticated) return@collect;
+                if (event is SessionStatus.NotAuthenticated) {
+                    if (event.isSignOut) userState.update { UserState() }
+                    return@collect
+                }
+                val authEvent = event as SessionStatus.Authenticated
+                val guards = supa.from("guard").select().decodeAs<List<Guard>>()
+                userState.update {
+                    UserState(
+                        loggedIn = true,
+                        displayName = authEvent.session.user?.userMetadata?.get("full_name") as? String ?: "Név",
+                        email = authEvent.session.user?.email ?: "email@address",
+                        guard = guards[0]
+                    )
+                }
+            }
+        }
     }
 }

@@ -11,3 +11,11 @@ interface IconVariants {
     val darkIcon: ImageVector
     val lightIcon: ImageVector
 }
+
+fun ImageVector.iconVariants(): IconVariants {
+    val icon = this
+    return object : IconVariants {
+        override val darkIcon: ImageVector = icon
+        override val lightIcon: ImageVector = icon
+    }
+}

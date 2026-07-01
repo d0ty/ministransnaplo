@@ -39,7 +39,6 @@ class Guard(
                 add(KtorNetworkFetcherFactory())
             }.build()
         Row(
-            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -18,23 +18,23 @@ interface NavMenuItem {
     val title: String
     val icon: IconVariants
     val destination: NavItem
-    val submenuItems: Array<NavSubmenuItem>
+    val submenuItems: ArrayList<NavSubmenuItem>
 }
 
 enum class NavMenuItems(
     override val title: String,
     override val icon: IconVariants,
     override val destination: NavItem,
-    override val submenuItems: Array<NavSubmenuItem> = emptyArray()
+    override val submenuItems: ArrayList<NavSubmenuItem> = arrayListOf(),
 ) : NavMenuItem {
     Home("Kezdőlap", LucideHouse, LoggedIn), // TODO: replace with actual destination
     Members("Tagok", LucideUsers, LoggedIn), // TODO: replace with actual destination
+    Programs("Programok", LucideCalendarDays, LoggedIn), // TODO: replace with actual destination
 
     // TODO: replace with actual destination
-    Programs(
-        "Programok", LucideCalendarDays, LoggedIn, arrayOf(
+    Competition(
+        "Pontverseny", LucidePodium, LoggedIn, arrayListOf(
             NavSubmenuItem("Összesítők", LoggedIn)// TODO: replace with actual destination
         )
     ),
-    Competition("Pontverseny", LucidePodium, LoggedIn)// TODO: replace with actual destination,
 }
