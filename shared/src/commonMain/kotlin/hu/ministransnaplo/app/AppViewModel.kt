@@ -8,6 +8,7 @@ package hu.ministransnaplo.app
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.models.Guard
+import hu.ministransnaplo.app.models.Member
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
@@ -18,6 +19,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,10 +50,12 @@ open class AppViewModel : ViewModel() {
     data class UserState(
         val loggedIn: Boolean = false,
         val mfaState: MFAState? = null,
-        val displayName: String = "Username",
         val email: String = "email@address",
         val guard: Guard? = null,
-    )
+        val profile: Member? = null,
+    ) {
+        val displayName: String = profile?.name ?: ""
+    }
 
     val userState: StateFlow<UserState>
         field = MutableStateFlow(UserState())
@@ -73,14 +77,16 @@ open class AppViewModel : ViewModel() {
                     return@collect
                 }
                 val authEvent = event as SessionStatus.Authenticated
-                val guards = supa.from("guard").select().decodeAs<List<Guard>>()
+                val guard = supa.postgrest.rpc("get_my_guard").decodeAs<Guard>()
                 userState.update {
                     UserState(
                         loggedIn = true,
                         mfaState = MFAState.fromMFALevel(supa.auth.mfa.getAuthenticatorAssuranceLevel()),
-                        displayName = authEvent.session.user?.userMetadata?.get("full_name") as? String ?: "Név",
+                        profile = authEvent.session.user?.id?.let { value ->
+                            supa.from("member").select { filter { eq("login", value) } }.decodeSingle<Member?>()
+                        },
                         email = authEvent.session.user?.email ?: "email@address",
-                        guard = guards[0]
+                        guard = guard
                     )
                 }
             }

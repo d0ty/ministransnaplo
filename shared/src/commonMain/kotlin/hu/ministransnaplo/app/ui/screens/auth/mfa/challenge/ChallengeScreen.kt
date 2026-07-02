@@ -31,14 +31,14 @@ object MFAChallenge : NavItem {}
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ChallengeScreen(onSucess: () -> Unit, viewModel: MFAChallengeViewModel = viewModel { MFAChallengeViewModel() }) {
-    val state = viewModel.state.collectAsStateWithLifecycle()
+    val userState = viewModel.userState.collectAsStateWithLifecycle()
     var mfaCode by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     SingleCardScreen(snackbarHostState = snackbarHostState) {
-        state.value.guard?.ProfilePicture(viewModel.supabase, 128.dp)
+        userState.value.guard?.ProfilePicture(viewModel.supabase, 128.dp)
         Spacer(Modifier.height(16.dp))
         Text(
-            "Üdvözlet ${state.value.displayName}! \n Kérlek add meg a hitelesítő alkalmazás" +
+            "Üdvözlet ${userState.value.displayName}! \n Kérlek add meg a hitelesítő alkalmazás" +
                     " által generált kódot a belépéshez.",
             fontSize = 18.sp, fontWeight = FontWeight.Medium, modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
