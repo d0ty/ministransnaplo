@@ -16,9 +16,14 @@ import hu.ministransnaplo.app.NavContainer
 import hu.ministransnaplo.app.models.Guard
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.icons.AppLogo
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Serializable
 object LoggedIn : NavItem
@@ -29,6 +34,11 @@ fun LoggedInScreen(onNavigation: (NavItem) -> Unit, viewModel: AppViewModel = vi
     scope.launch {
         viewModel.supabase.from("guard").select().decodeAs<List<Guard>>().forEach {
             println("${it.id} ${it.name}")
+        }
+        viewModel.supabase.functions.invoke("hello-world", body = buildJsonObject {
+            put("message", "hi")
+        }, headers = Headers.build { append(HttpHeaders.ContentType, "application/json") }).bodyAsText().also {
+            println(it)
         }
     }
     NavContainer(onNavigation = onNavigation) {
