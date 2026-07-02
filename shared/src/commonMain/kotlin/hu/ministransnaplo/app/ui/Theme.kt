@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 doty and László Rab
- * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
  */
 
 package hu.ministransnaplo.app.ui
@@ -13,6 +13,7 @@ object Theme {
         primary = Color(0xFF4878D7),
         background = Color(0xFF272534),
         surface = Color(0xFF434F60),
-        surfaceVariant = Color(0xFFADAFBD)
+        surfaceVariant = Color(0xFFADAFBD),
+        scrim = Color(0x80000000)
     )
 }

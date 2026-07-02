@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 doty and László Rab
- * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
  */
 
 package hu.ministransnaplo.app.ui.components
@@ -19,9 +19,13 @@ import androidx.compose.ui.unit.dp
 import hu.ministransnaplo.app.ui.Theme
 
 @Composable
-fun CardColumn(content: @Composable ColumnScope.() -> Unit) {
+fun CardColumn(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
         Modifier
+            .then(modifier)
             .clip(RoundedCornerShape(16f))
             .background(Theme.colorScheme.surface)
             .padding(16.dp).width(IntrinsicSize.Max),

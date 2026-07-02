@@ -10,13 +10,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Member(
-    val id: String,
+    val id: String = "",
     val name: String,
     @SerialName("islecturer")
     val isLecturer: Boolean,
-    val role: Role,
+    val role: Role = Role.NORMAL,
     @SerialName("login")
-    val userId: String?
+    val userId: String? = null,
 ) {
     @Serializable
     enum class Role {
@@ -26,4 +26,13 @@ data class Member(
         @SerialName("sysadmin")
         SYSADMIN
     }
+
+    @Serializable
+    data class New(
+        val guard: String,
+        val name: String,
+        @SerialName("islecturer")
+        val isLecturer: Boolean,
+        val role: Role = Role.NORMAL,
+    )
 }

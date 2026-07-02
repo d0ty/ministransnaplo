@@ -16,9 +16,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.screens.LoggedIn
@@ -29,6 +31,10 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.ChallengeScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
+import hu.ministransnaplo.app.ui.screens.members.Members
+import hu.ministransnaplo.app.ui.screens.members.MembersScreen
+import hu.ministransnaplo.app.ui.screens.members.NewMember
+import hu.ministransnaplo.app.ui.screens.members.NewMemberDialog
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.launch
 
@@ -76,6 +82,17 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                     ChallengeScreen(onSucess = {
                         navController.navigate(LoggedIn)
                     })
+                }
+                composable<Members> {
+                    MembersScreen(onNavigation = {
+                        navController.navigate(it)
+                    })
+                }
+                dialog<NewMember>(dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().fullScreenDialogs)) {
+                    NewMemberDialog(
+                        close = { navController.popBackStack() },
+                        navigate = { navController.navigate(it) }
+                    )
                 }
             }
         }
