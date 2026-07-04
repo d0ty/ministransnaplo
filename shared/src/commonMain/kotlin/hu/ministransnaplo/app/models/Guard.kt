@@ -23,12 +23,15 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.coil.coil3
 import io.github.jan.supabase.storage.authenticatedStorageItem
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 class Guard(
     val id: String,
     val name: String,
+    @SerialName("owner")
+    val ownerId: String
 ) {
     @OptIn(SupabaseExperimental::class)
     @Composable

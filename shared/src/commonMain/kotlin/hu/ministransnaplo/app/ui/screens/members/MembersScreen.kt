@@ -7,6 +7,8 @@ package hu.ministransnaplo.app.ui.screens.members
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,9 +24,11 @@ object Members : NavItem
 
 @Composable
 fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel = viewModel { MembersViewModel() }) {
+    val userState by viewModel.userState.collectAsState()
+    println("${userState.isGuardOwner} ${userState.guard?.ownerId} ${userState.userId}")
     NavContainer(onNavigation = onNavigation) {
         Column(Modifier.fillMaxSize()) {
-            ScreenTitleBar("Tagok", LucideUserPlus) {
+            ScreenTitleBar("Tagok", LucideUserPlus, userState.isGuardOwner) {
                 onNavigation(NewMember)
             }
             Spacer(Modifier.height(16.dp))

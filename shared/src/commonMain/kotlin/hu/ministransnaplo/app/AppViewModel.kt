@@ -50,11 +50,14 @@ open class AppViewModel : ViewModel() {
     data class UserState(
         val loggedIn: Boolean = false,
         val mfaState: MFAState? = null,
+        val userId: String = "",
         val email: String = "email@address",
         val guard: Guard? = null,
         val profile: Member? = null,
     ) {
         val displayName: String = profile?.name ?: ""
+        val isGuardOwner: Boolean
+            get() = if (guard == null) false else guard.ownerId == userId
     }
 
     val userState: StateFlow<UserState>
@@ -86,6 +89,7 @@ open class AppViewModel : ViewModel() {
                             supa.from("member").select { filter { eq("login", value) } }.decodeSingle<Member?>()
                         },
                         email = authEvent.session.user?.email ?: "email@address",
+                        userId = authEvent.session.user?.id ?: "userId",
                         guard = guard
                     )
                 }

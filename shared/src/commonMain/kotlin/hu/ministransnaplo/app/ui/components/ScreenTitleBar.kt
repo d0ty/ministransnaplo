@@ -23,9 +23,10 @@ data class TitleBarStyle(val textStyle: TextStyle, val iconSize: Dp)
 expect val titleBarStyle: TitleBarStyle
 
 @Composable
-fun ScreenTitleBar(title: String, icon: ImageVector, onNavigation: () -> Unit) {
+fun ScreenTitleBar(title: String, icon: ImageVector, showActionButton: Boolean = false, onNavigation: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(text = title, style = titleBarStyle.textStyle)
-        Image(icon, "", modifier = Modifier.clickable(onClick = onNavigation).size(titleBarStyle.iconSize))
+        if (showActionButton)
+            Image(icon, "", modifier = Modifier.clickable(onClick = onNavigation).size(titleBarStyle.iconSize))
     }
 }
