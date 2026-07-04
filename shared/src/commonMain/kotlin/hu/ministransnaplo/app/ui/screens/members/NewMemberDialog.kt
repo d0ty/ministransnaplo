@@ -62,15 +62,15 @@ fun NewMemberDialog(
                         if (memberName.isEmpty()) {
                             scope.launch {
                                 snackbarHostState.showSnackbar("A név mező nem lehet üres!")
+                                close()
                             }
-                            close()
                             return@SubmitButton
                         }
-                        if (email.isNotEmpty() && FormValidator.EMAIL.validate(email)) {
+                        if (email.isNotEmpty() && !FormValidator.EMAIL.validate(email)) {
                             scope.launch {
                                 snackbarHostState.showSnackbar("Az email cím nem érvényes!")
+                                close()
                             }
-                            close()
                             return@SubmitButton
                         }
                         viewModel.createMember(memberName, isLecturer, email) { result ->

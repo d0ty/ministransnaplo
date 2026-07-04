@@ -9,26 +9,37 @@ import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.util.DbResult
+import hu.ministransnaplo.app.util.invokeWithJsonBody
+import io.github.jan.supabase.exceptions.RestException
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.put
 
 class MembersViewModel : AppViewModel() {
     fun createMember(name: String, isLecturer: Boolean, email: String, onResult: (DbResult) -> Unit) {
-        if (email.isNotBlank()) {
-            // TODO: user creation using supabase edge functions
-            throw NotImplementedError()
-        }
-        // Normal member creation
         viewModelScope.launch(Dispatchers.Default) {
             try {
-                supabase.from("member")
-                    .insert(Member.New(guard = userState.value.guard!!.id, name = name, isLecturer = isLecturer))
-                onResult(DbResult.Success.NoContent)
+                val member = supabase.from("member")
+                    .insert(Member.New(guard = userState.value.guard!!.id, name = name, isLecturer = isLecturer)) {
+                        select()
+                    }.decodeSingle<Member>()
+                if (email.isBlank()) {
+                    onResult(DbResult.Success.WithContent(member))
+                    return@launch
+                }
+                supabase.functions.invokeWithJsonBody("invite-user") {
+                    put("member_id", member.id)
+                    put("email", email)
+                }
+                onResult(DbResult.Success.WithContent(member))
             } catch (e: PostgrestRestException) {
                 onResult(if (e.code == "42501") DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
                 if (e.code != "42501") e.printStackTrace()
+            } catch (e: RestException) {
+                onResult(if (e.statusCode == 401) DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
             } catch (e: Exception) {
                 onResult(DbResult.Failure.Error)
                 e.printStackTrace()
