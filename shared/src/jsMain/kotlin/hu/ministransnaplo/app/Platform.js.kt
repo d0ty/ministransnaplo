@@ -15,7 +15,7 @@ object JsPlatform : Platform {
     override val name: String = userAgent.findAnyOf(browserList, ignoreCase = true)
         ?.let { (startIndex) -> userAgent.substring(startIndex).substringBefore(" ") }
         ?: "Unknown"
-    override val fullScreenDialogs: Boolean
+    override val isMobile: Boolean
         get() = false
 }
 

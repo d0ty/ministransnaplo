@@ -7,7 +7,7 @@ package hu.ministransnaplo.app
 
 object WasmPlatform : Platform {
     override val name: String = "Web with Kotlin/Wasm"
-    override val fullScreenDialogs: Boolean
+    override val isMobile: Boolean
         get() = false
 }
 

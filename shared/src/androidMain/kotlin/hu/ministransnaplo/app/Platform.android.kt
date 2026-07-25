@@ -10,7 +10,7 @@ import android.os.Build
 
 object AndroidPlatform : Platform {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
-    override val fullScreenDialogs: Boolean
+    override val isMobile: Boolean
         get() = true
 }
 

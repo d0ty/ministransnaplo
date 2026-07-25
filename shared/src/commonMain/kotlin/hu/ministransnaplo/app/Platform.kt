@@ -8,7 +8,7 @@ package hu.ministransnaplo.app
 
 interface Platform {
     val name: String
-    val fullScreenDialogs: Boolean
+    val isMobile: Boolean
 }
 
 expect fun getPlatform(): Platform

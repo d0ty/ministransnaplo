@@ -109,7 +109,14 @@ fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel =
                             cell { Text(member.rank) }
                             cell { Text("0") }
                             cell { Text("0") }
-                            cell { Image(imageVector = LucideArrowRight.lightIcon, contentDescription = null) }
+                            cell {
+                                Image(
+                                    imageVector = LucideArrowRight.lightIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable {
+                                        onNavigation(MemberDetail(member))
+                                    })
+                            }
                         }
                     }
                 }

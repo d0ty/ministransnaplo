@@ -22,6 +22,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.screens.LoggedIn
 import hu.ministransnaplo.app.ui.screens.LoggedInScreen
@@ -31,12 +33,10 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.ChallengeScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
-import hu.ministransnaplo.app.ui.screens.members.Members
-import hu.ministransnaplo.app.ui.screens.members.MembersScreen
-import hu.ministransnaplo.app.ui.screens.members.NewMember
-import hu.ministransnaplo.app.ui.screens.members.NewMemberDialog
+import hu.ministransnaplo.app.ui.screens.members.*
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.launch
+import kotlin.reflect.typeOf
 
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -88,8 +88,19 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         navController.navigate(it)
                     })
                 }
-                dialog<NewMember>(dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().fullScreenDialogs)) {
+                dialog<NewMember>(dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)) {
                     NewMemberDialog(
+                        close = { navController.popBackStack() },
+                        navigate = { navController.navigate(route = it) }
+                    )
+                }
+                dialog<MemberDetail>(
+                    typeMap = mapOf(typeOf<Member>() to Member.NavType),
+                    dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                ) { backStackEntry ->
+                    val member: Member = backStackEntry.toRoute<MemberDetail>().member
+                    MemberDetailDialog(
+                        member,
                         close = { navController.popBackStack() },
                         navigate = { navController.navigate(it) }
                     )
