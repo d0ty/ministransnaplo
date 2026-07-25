@@ -46,7 +46,6 @@ class MembersViewModel : AppViewModel() {
     fun fetchMemberTable(query: String = "", orderColumn: MemberTableColumns? = null, ascending: Boolean = true) {
         viewModelScope.launch {
             tableState.update { it.copy(isLoading = true, order = MemberTableOrder(orderColumn, ascending)) }
-            println("fetchMemberTable")
             supabase.auth.awaitInitialization()
             supabase.from("member").select() {
                 if (orderColumn != null && orderColumn.id != null)
@@ -54,9 +53,11 @@ class MembersViewModel : AppViewModel() {
                         orderColumn.id, if (ascending) Order.ASCENDING else Order.DESCENDING,
                         orderColumn == MemberTableColumns.Rank && ascending
                     )
+                if (query.isNotBlank()) filter {
+                    like("name", "%$query%")
+                }
             }.decodeAs<List<Member>>().also { result ->
                 tableState.update { MemberTableState(false, query, MemberTableOrder(orderColumn, ascending), result) }
-                println("fetchMemberTable result: $result")
             }
         }
     }

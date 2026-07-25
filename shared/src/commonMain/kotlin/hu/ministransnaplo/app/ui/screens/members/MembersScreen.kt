@@ -8,10 +8,10 @@ package hu.ministransnaplo.app.ui.screens.members
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,6 +44,29 @@ fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel =
             }
             Spacer(Modifier.height(16.dp))
             FullScreenCard(Modifier.fillMaxSize().fillMaxWidth()) {
+                var queryValue by remember { mutableStateOf("") }
+                OutlinedTextField(
+                    value = queryValue,
+                    onValueChange = {
+                        queryValue = it
+                        viewModel.fetchMemberTable(
+                            it,
+                            tableState.order.column,
+                            tableState.order.ascending
+                        )
+                    },
+                    placeholder = { Text("Keresés") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(percent = 50),
+                    leadingIcon = {
+                        Image(
+                            imageVector = LucideSearch,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                )
+                Spacer(Modifier.height(16.dp))
                 DataTable(
                     modifier = Modifier.fillMaxSize(),
                     columns = {
