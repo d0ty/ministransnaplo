@@ -22,7 +22,7 @@ data class Member(
         get() = userId != null
 
     val rank: String
-        get() = "${if (isLeader) "Vezető" else "Tag"} ${if (isLecturer) ", lektor" else ""}"
+        get() = "${if (isLeader) "Vezető" else "Tag"}${if (isLecturer) ", lektor" else ""}"
 
     @Serializable
     enum class Role {
