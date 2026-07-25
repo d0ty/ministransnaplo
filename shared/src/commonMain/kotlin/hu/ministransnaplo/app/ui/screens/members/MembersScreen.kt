@@ -6,6 +6,7 @@
 package hu.ministransnaplo.app.ui.screens.members
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,13 +19,19 @@ import hu.ministransnaplo.app.NavContainer
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.FullScreenCard
 import hu.ministransnaplo.app.ui.components.ScreenTitleBar
-import hu.ministransnaplo.app.ui.icons.lucide.LucideArrowRight
-import hu.ministransnaplo.app.ui.icons.lucide.LucideUserPlus
+import hu.ministransnaplo.app.ui.icons.lucide.*
 import io.github.windedge.table.DataTable
 import kotlinx.serialization.Serializable
 
 @Serializable
 object Members : NavItem
+
+enum class MemberTableColumns(val id: String?, val title: String) {
+    Name("name", "Név"),
+    Rank("login", "Rang"),
+    Justifications(null, "Igazolások"),
+    Omissions(null, "Mulasztások")
+}
 
 @Composable
 fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel = viewModel { MembersViewModel() }) {
@@ -40,17 +47,29 @@ fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel =
                 DataTable(
                     modifier = Modifier.fillMaxSize(),
                     columns = {
-                        column {
-                            Text("Név")
-                        }
-                        column {
-                            Text("Rang")
-                        }
-                        column {
-                            Text("Igazolások")
-                        }
-                        column {
-                            Text("Mulasztások")
+                        MemberTableColumns.entries.forEach { columnData ->
+                            column {
+                                Row {
+                                    val orderIcon = if (tableState.order.column == columnData) {
+                                        if (tableState.order.ascending) LucideChevronUp else LucideChevronDown
+                                    } else {
+                                        LucideChevronsUpDown
+                                    }
+                                    Text(columnData.title)
+                                    Spacer(Modifier.width(2.dp))
+                                    Image(
+                                        imageVector = orderIcon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp).clickable {
+                                            if (tableState.order.ascending) viewModel.fetchMemberTable(
+                                                "",
+                                                columnData,
+                                                false
+                                            )
+                                            else viewModel.fetchMemberTable("", columnData, true)
+                                        })
+                                }
+                            }
                         }
                         column {}
                     }

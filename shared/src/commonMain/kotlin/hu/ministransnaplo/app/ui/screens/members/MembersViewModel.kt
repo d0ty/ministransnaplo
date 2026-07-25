@@ -15,6 +15,7 @@ import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,9 +24,15 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.put
 
 class MembersViewModel : AppViewModel() {
+    data class MemberTableOrder(
+        val column: MemberTableColumns? = null,
+        val ascending: Boolean = true,
+    )
+
     data class MemberTableState(
         val isLoading: Boolean = false,
         val query: String = "",
+        val order: MemberTableOrder = MemberTableOrder(),
         val members: List<Member> = emptyList(),
     )
 
@@ -36,13 +43,19 @@ class MembersViewModel : AppViewModel() {
         fetchMemberTable()
     }
 
-    fun fetchMemberTable(query: String = "") {
+    fun fetchMemberTable(query: String = "", orderColumn: MemberTableColumns? = null, ascending: Boolean = true) {
         viewModelScope.launch {
-            tableState.update { it.copy(isLoading = true) }
+            tableState.update { it.copy(isLoading = true, order = MemberTableOrder(orderColumn, ascending)) }
             println("fetchMemberTable")
             supabase.auth.awaitInitialization()
-            supabase.from("member").select().decodeAs<List<Member>>().also { result ->
-                tableState.update { MemberTableState(false, query, result) }
+            supabase.from("member").select() {
+                if (orderColumn != null && orderColumn.id != null)
+                    order(
+                        orderColumn.id, if (ascending) Order.ASCENDING else Order.DESCENDING,
+                        orderColumn == MemberTableColumns.Rank && ascending
+                    )
+            }.decodeAs<List<Member>>().also { result ->
+                tableState.update { MemberTableState(false, query, MemberTableOrder(orderColumn, ascending), result) }
                 println("fetchMemberTable result: $result")
             }
         }
