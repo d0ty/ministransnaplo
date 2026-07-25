@@ -18,6 +18,12 @@ data class Member(
     @SerialName("login")
     val userId: String? = null,
 ) {
+    val isLeader: Boolean
+        get() = userId != null
+
+    val rank: String
+        get() = "${if (isLeader) "Vezető" else "Tag"} ${if (isLecturer) ", lektor" else ""}"
+
     @Serializable
     enum class Role {
         @SerialName("normal")

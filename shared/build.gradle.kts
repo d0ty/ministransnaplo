@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.coil3.compose)
             implementation(libs.coil3.ktor)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.windegde.table)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -10,15 +10,44 @@ import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.invokeWithJsonBody
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.put
 
 class MembersViewModel : AppViewModel() {
+    data class MemberTableState(
+        val isLoading: Boolean = false,
+        val query: String = "",
+        val members: List<Member> = emptyList(),
+    )
+
+    val tableState: StateFlow<MemberTableState>
+        field = MutableStateFlow(MemberTableState())
+
+    init {
+        fetchMemberTable()
+    }
+
+    fun fetchMemberTable(query: String = "") {
+        viewModelScope.launch {
+            tableState.update { it.copy(isLoading = true) }
+            println("fetchMemberTable")
+            supabase.auth.awaitInitialization()
+            supabase.from("member").select().decodeAs<List<Member>>().also { result ->
+                tableState.update { MemberTableState(false, query, result) }
+                println("fetchMemberTable result: $result")
+            }
+        }
+    }
+
     fun createMember(name: String, isLecturer: Boolean, email: String, onResult: (DbResult) -> Unit) {
         viewModelScope.launch(Dispatchers.Default) {
             try {

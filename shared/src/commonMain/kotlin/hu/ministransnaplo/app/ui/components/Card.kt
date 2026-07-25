@@ -19,6 +19,23 @@ import androidx.compose.ui.unit.dp
 import hu.ministransnaplo.app.ui.Theme
 
 @Composable
+fun FullScreenCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        Modifier
+            .then(modifier)
+            .clip(RoundedCornerShape(16f))
+            .background(Theme.colorScheme.surface)
+            .padding(16.dp).fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        content()
+    }
+}
+
+@Composable
 fun CardColumn(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
