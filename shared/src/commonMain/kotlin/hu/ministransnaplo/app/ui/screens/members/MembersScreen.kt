@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -59,7 +60,12 @@ fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel =
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(percent = 50),
                     leadingIcon = {
-                        Image(
+                        if (tableState.isLoading)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        else Image(
                             imageVector = LucideSearch,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp)
