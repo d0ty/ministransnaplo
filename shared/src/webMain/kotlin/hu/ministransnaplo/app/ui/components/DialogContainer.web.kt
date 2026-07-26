@@ -30,8 +30,10 @@ actual fun DialogContainer(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable (() -> Unit),
+    commands: DialogCommandRegistry.() -> Unit,
     content: @Composable () -> Unit
 ) {
+    val commands = DialogCommandRegistry().apply(commands)
     Column(
         Modifier
             .clip(RoundedCornerShape(16f))

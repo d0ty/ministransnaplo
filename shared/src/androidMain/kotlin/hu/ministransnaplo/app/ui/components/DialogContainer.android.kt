@@ -25,8 +25,10 @@ actual fun DialogContainer(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable (() -> Unit),
+    commands: DialogCommandRegistry.() -> Unit,
     content: @Composable () -> Unit
 ) {
+    val dialogCommands = DialogCommandRegistry().apply(commands)
     NavContainer(onNavigation = navigate) {
         Column {
             Row(

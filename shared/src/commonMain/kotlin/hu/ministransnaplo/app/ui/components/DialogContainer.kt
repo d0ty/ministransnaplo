@@ -6,9 +6,25 @@
 package hu.ministransnaplo.app.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import hu.ministransnaplo.app.ui.NavItem
+
+
+data class DialogCommand(
+    val icon: ImageVector,
+    val title: String,
+    val action: () -> Unit
+)
+
+class DialogCommandRegistry() {
+    val commands = arrayListOf<DialogCommand>()
+
+    fun command(icon: ImageVector, title: String, action: () -> Unit) {
+        commands.add(DialogCommand(icon, title, action))
+    }
+}
 
 @Composable
 expect fun DialogContainer(
@@ -17,5 +33,6 @@ expect fun DialogContainer(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable () -> Unit = {},
+    commands: DialogCommandRegistry.() -> Unit,
     content: @Composable () -> Unit
 )
