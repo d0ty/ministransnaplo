@@ -21,7 +21,6 @@ import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
-import hu.ministransnaplo.app.ui.components.FlexibleSpacer
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideRotateCcw
 import kotlinx.serialization.Serializable
@@ -33,7 +32,7 @@ data class MemberDetail(val member: Member) : NavItem
 fun DataField(field: String, value: String) {
     FlexBox(negateMobile = true) {
         Text("$field:", fontWeight = FontWeight.SemiBold)
-        FlexibleSpacer(2.dp)
+        FlexibleSpacer(3.dp)
         Text(value)
     }
 }
@@ -46,8 +45,8 @@ fun MemberDetailDialog(
     viewModel: MembersViewModel = viewModel { MembersViewModel() }
 ) {
     DialogContainer("${member.name} adatlapja", 500.dp, close, navigate) {
-        FlexBox(modifier = Modifier.width(IntrinsicSize.Max).fillMaxWidth()) {
-            CardColumn(horizontalAlignment = Alignment.Start) {
+        FlexBox(modifier = Modifier.fillMaxWidth()) {
+            CardColumn(modifier = Modifier.fillMaxFlexSpace(), horizontalAlignment = Alignment.Start) {
                 Text("Adatok", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
                 Spacer(Modifier.height(12.dp))
                 DataField("Név", member.name)
@@ -57,14 +56,14 @@ fun MemberDetailDialog(
             }
             FlexibleSpacer(16.dp)
             CardColumn(
-                Modifier.height(IntrinsicSize.Max).width(IntrinsicSize.Max),
+                Modifier.fillMaxFlexSpace(),
                 horizontalAlignment = Alignment.Start
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Igazolatlan programok")
+                    Text("Igazolatlan programok", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Image(LucideRotateCcw, null, Modifier.size(20.dp).clickable {
                         // TODO: implement with the future program system
                     })
