@@ -8,16 +8,19 @@ package hu.ministransnaplo.app.ui.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import hu.ministransnaplo.app.NavContainer
+import hu.ministransnaplo.app.AndroidNavContainer
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.icons.lucide.LucideArrowLeft
+import hu.ministransnaplo.app.ui.icons.lucide.LucideMenu
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun DialogContainer(
     title: String,
@@ -29,7 +32,14 @@ actual fun DialogContainer(
     content: @Composable () -> Unit
 ) {
     val dialogCommands = DialogCommandRegistry().apply(commands)
-    NavContainer(onNavigation = navigate) {
+    AndroidNavContainer(onNavigation = navigate, bottomSheet = {
+        for (command in dialogCommands.commands) {
+            Row(Modifier.clickable { command.action() }) {
+                Image(command.icon, command.title)
+                Text(command.title)
+            }
+        }
+    }) {
         Column {
             Row(
                 Modifier.fillMaxWidth(),
@@ -39,8 +49,11 @@ actual fun DialogContainer(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(LucideArrowLeft, "", Modifier.size(titleBarStyle.iconSize).clickable(onClick = close))
                     Spacer(Modifier.width(8.dp))
-                    Text(text = title, style = titleBarStyle.textStyle)
+                    Text(text = title, style = titleBarStyle.textStyle, modifier = Modifier.fillMaxWidth(0.8f))
                 }
+                if (dialogCommands.isNotEmpty) Image(LucideMenu, "", Modifier.size(titleBarStyle.iconSize).clickable {
+                    openSheet()
+                })
                 trailingIcon()
             }
             Spacer(Modifier.height(48.dp))

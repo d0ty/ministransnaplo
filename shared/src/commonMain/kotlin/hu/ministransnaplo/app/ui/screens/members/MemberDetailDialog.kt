@@ -21,6 +21,7 @@ import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
+import hu.ministransnaplo.app.ui.icons.lucide.LucideBolt
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideRotateCcw
 import kotlinx.serialization.Serializable
@@ -44,7 +45,11 @@ fun MemberDetailDialog(
     navigate: (NavItem) -> Unit,
     viewModel: MembersViewModel = viewModel { MembersViewModel() }
 ) {
-    DialogContainer("${member.name} adatlapja", 500.dp, close, navigate) {
+    DialogContainer("${member.name} adatlapja", 500.dp, close, navigate, commands = {
+        command(LucideBolt, "Teszt művelet") {
+            println("hello from an operation!")
+        }
+    }) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
             CardColumn(modifier = Modifier.fillMaxFlexSpace(), horizontalAlignment = Alignment.Start) {
                 Text("Adatok", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)

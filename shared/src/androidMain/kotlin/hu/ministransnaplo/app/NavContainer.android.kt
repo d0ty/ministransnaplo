@@ -10,8 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ministransnaplo.app.ui.*
 import hu.ministransnaplo.app.ui.icons.IconVariants
 import hu.ministransnaplo.app.ui.icons.lucide.LucideEllipsis
@@ -52,31 +52,65 @@ internal object MenuItem : NavMenuItem {
         get() = arrayListOf()
 }
 
+data class AndroidNavContainerScope(val openSheet: () -> Unit)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@Composable
+fun AndroidNavContainer(
+    viewModel: AppViewModel = viewModel { AppViewModel() },
+    onNavigation: (NavItem) -> Unit,
+    bottomSheet: @Composable ColumnScope.() -> Unit = {},
+    content: @Composable AndroidNavContainerScope.() -> Unit,
+) {
+    var activeMenu: NavMenuItem by remember { mutableStateOf(NavMenuItems.Home) }
+    var showCommands by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = AndroidNavContainerScope {
+        showCommands = true
+    }
+    Scaffold(bottomBar = {
+        Box {
+            Row(
+                Modifier.fillMaxWidth().background(Theme.colorScheme.primary).height(60.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                NavMenuItems.entries.forEach { item ->
+                    MenuItem(item, activeMenu, onNavigation = {
+                        activeMenu = item
+                        onNavigation(item.destination)
+                    })
+                }
+                MenuItem(MenuItem, activeMenu, onNavigation = {
+                    activeMenu = MenuItem
+                    onNavigation(MenuItem.destination)
+                })
+            }
+            if (showCommands) {
+                ModalBottomSheet(
+                    onDismissRequest = { showCommands = false },
+                    sheetState = sheetState,
+                    content = bottomSheet
+                )
+            }
+        }
+    }) {
+        scope.content()
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun NavContainer(
     viewModel: AppViewModel,
     onNavigation: (NavItem) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    var activeMenu: NavMenuItem by remember { mutableStateOf(NavMenuItems.Home) }
-    Scaffold(bottomBar = {
-        Row(
-            Modifier.fillMaxWidth().background(Theme.colorScheme.primary).height(60.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            NavMenuItems.entries.forEach { item ->
-                MenuItem(item, activeMenu, onNavigation = {
-                    activeMenu = item
-                    onNavigation(item.destination)
-                })
-            }
-            MenuItem(MenuItem, activeMenu, onNavigation = {
-                activeMenu = MenuItem
-                onNavigation(MenuItem.destination)
-            })
-        }
-    }) {
+    AndroidNavContainer(
+        viewModel = viewModel,
+        onNavigation = onNavigation,
+    ) {
         content()
     }
 }

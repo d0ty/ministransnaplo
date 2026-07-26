@@ -21,6 +21,8 @@ data class DialogCommand(
 class DialogCommandRegistry() {
     val commands = arrayListOf<DialogCommand>()
 
+    val isNotEmpty get() = commands.isNotEmpty()
+
     fun command(icon: ImageVector, title: String, action: () -> Unit) {
         commands.add(DialogCommand(icon, title, action))
     }
@@ -33,6 +35,6 @@ expect fun DialogContainer(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable () -> Unit = {},
-    commands: DialogCommandRegistry.() -> Unit,
+    commands: DialogCommandRegistry.() -> Unit = {},
     content: @Composable () -> Unit
 )
