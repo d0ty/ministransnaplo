@@ -5,9 +5,10 @@
 
 package hu.ministransnaplo.app.ui.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import hu.ministransnaplo.app.getPlatform
 
 /**
@@ -18,10 +19,19 @@ import hu.ministransnaplo.app.getPlatform
  *  The platform depends on `Platform.isMobile`.
  */
 @Composable
-fun FlexBox(content: @Composable () -> Unit) {
-    if (getPlatform().isMobile) {
-        Column { content() }
+fun FlexBox(negateMobile: Boolean = false, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    if (getPlatform().isMobile != negateMobile) {
+        Column(modifier) { content() }
     } else {
-        Row { content() }
+        Row(modifier) { content() }
+    }
+}
+
+@Composable
+fun FlexibleSpacer(size: Dp) {
+    if (getPlatform().isMobile) {
+        Spacer(modifier = Modifier.height(size))
+    } else {
+        Spacer(modifier = Modifier.width(size))
     }
 }

@@ -21,6 +21,7 @@ data class Member(
     val role: Role = Role.NORMAL,
     @SerialName("login")
     val userId: String? = null,
+    val email: String? = null,
 ) {
     val isLeader: Boolean
         get() = userId != null

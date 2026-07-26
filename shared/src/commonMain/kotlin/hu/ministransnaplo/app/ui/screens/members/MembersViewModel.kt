@@ -47,7 +47,7 @@ class MembersViewModel : AppViewModel() {
         viewModelScope.launch {
             tableState.update { it.copy(isLoading = true, order = MemberTableOrder(orderColumn, ascending)) }
             supabase.auth.awaitInitialization()
-            supabase.from("member").select() {
+            supabase.from("member_data").select() {
                 if (orderColumn != null && orderColumn.id != null)
                     order(
                         orderColumn.id, if (ascending) Order.ASCENDING else Order.DESCENDING,

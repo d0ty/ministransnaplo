@@ -38,6 +38,7 @@ fun FullScreenCard(
 @Composable
 fun CardColumn(
     modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -46,7 +47,7 @@ fun CardColumn(
             .clip(RoundedCornerShape(16f))
             .background(Theme.colorScheme.surface)
             .padding(16.dp).width(IntrinsicSize.Max),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = horizontalAlignment
     ) {
         content()
     }
