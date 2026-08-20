@@ -26,8 +26,10 @@ data class Member(
     val isLeader: Boolean
         get() = userId != null
 
+    fun computeRank(isLecturer: Boolean) = "${if (isLeader) "Vezető" else "Tag"}${if (isLecturer) ", lektor" else ""}"
+
     val rank: String
-        get() = "${if (isLeader) "Vezető" else "Tag"}${if (isLecturer) ", lektor" else ""}"
+        get() = computeRank(isLecturer)
 
     @Serializable
     enum class Role {

@@ -58,12 +58,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-val LucideX: ImageVector
+val LucideSquarePen: ImageVector
     get() {
-        if (_LucideX != null) return _LucideX!!
+        if (_LucideSquarePen != null) return _LucideSquarePen!!
 
-        _LucideX = ImageVector.Builder(
-            name = "x",
+        _LucideSquarePen = ImageVector.Builder(
+            name = "square-pen",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 24f,
@@ -76,8 +76,14 @@ val LucideX: ImageVector
                 strokeLineCap = StrokeCap.Round,
                 strokeLineJoin = StrokeJoin.Round
             ) {
-                moveTo(18f, 6f)
-                lineTo(6f, 18f)
+                moveTo(12f, 3f)
+                horizontalLineTo(5f)
+                arcToRelative(2f, 2f, 0f, false, false, -2f, 2f)
+                verticalLineToRelative(14f)
+                arcToRelative(2f, 2f, 0f, false, false, 2f, 2f)
+                horizontalLineToRelative(14f)
+                arcToRelative(2f, 2f, 0f, false, false, 2f, -2f)
+                verticalLineToRelative(-7f)
             }
             path(
                 fill = SolidColor(Color.Transparent),
@@ -86,12 +92,19 @@ val LucideX: ImageVector
                 strokeLineCap = StrokeCap.Round,
                 strokeLineJoin = StrokeJoin.Round
             ) {
-                moveTo(6f, 6f)
-                lineToRelative(12f, 12f)
+                moveTo(18.375f, 2.625f)
+                arcToRelative(1f, 1f, 0f, false, true, 3f, 3f)
+                lineToRelative(-9.013f, 9.014f)
+                arcToRelative(2f, 2f, 0f, false, true, -0.853f, 0.505f)
+                lineToRelative(-2.873f, 0.84f)
+                arcToRelative(0.5f, 0.5f, 0f, false, true, -0.62f, -0.62f)
+                lineToRelative(0.84f, -2.873f)
+                arcToRelative(2f, 2f, 0f, false, true, 0.506f, -0.852f)
+                close()
             }
         }.build()
 
-        return _LucideX!!
+        return _LucideSquarePen!!
     }
 
-private var _LucideX: ImageVector? = null
+private var _LucideSquarePen: ImageVector? = null
