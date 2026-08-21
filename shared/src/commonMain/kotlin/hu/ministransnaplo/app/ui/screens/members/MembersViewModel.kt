@@ -8,6 +8,7 @@ package hu.ministransnaplo.app.ui.screens.members
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Member
+import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.invokeWithJsonBody
 import io.github.jan.supabase.auth.auth
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.put
 
 class MembersViewModel : AppViewModel() {
@@ -39,8 +41,16 @@ class MembersViewModel : AppViewModel() {
     val tableState: StateFlow<MemberTableState>
         field = MutableStateFlow(MemberTableState())
 
+    val currentMember: StateFlow<Member?>
+        field = MutableStateFlow(null)
+
     init {
         fetchMemberTable()
+    }
+
+    fun selectMember(member: Member) {
+        println("Selected member: ${Json.encodeToString(member)}")
+        currentMember.update { member }
     }
 
     fun fetchMemberTable(query: String = "", orderColumn: MemberTableColumns? = null, ascending: Boolean = true) {
@@ -78,6 +88,35 @@ class MembersViewModel : AppViewModel() {
                     put("email", email)
                 }
                 onResult(DbResult.Success.WithContent(member))
+            } catch (e: PostgrestRestException) {
+                onResult(if (e.code == "42501") DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
+                if (e.code != "42501") e.printStackTrace()
+            } catch (e: RestException) {
+                onResult(if (e.statusCode == 401) DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
+            } catch (e: Exception) {
+                onResult(DbResult.Failure.Error)
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun updateMember(data: Map<String, DCFieldValue>, onResult: (DbResult) -> Unit) {
+        if (currentMember.value == null) throw IllegalStateException("Can't update no member")
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                supabase.from("member").update(data) {
+                    select()
+                    filter {
+                        eq("id", currentMember.value!!.id)
+                    }
+                }.decodeSingle<Member>()
+                    .also { updated -> currentMember.update { updated.copy(email = it?.email) } }
+                fetchMemberTable(
+                    tableState.value.query,
+                    tableState.value.order.column,
+                    tableState.value.order.ascending
+                )
+                onResult(DbResult.Success.NoContent)
             } catch (e: PostgrestRestException) {
                 onResult(if (e.code == "42501") DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
                 if (e.code != "42501") e.printStackTrace()

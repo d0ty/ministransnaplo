@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DataCard
@@ -25,21 +24,23 @@ import hu.ministransnaplo.app.ui.components.FlexBox
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideRotateCcw
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
+import hu.ministransnaplo.app.util.DbResult
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class MemberDetail(val member: Member) : NavItem
+object MemberDetail : NavItem
 
 @Composable
 fun MemberDetailDialog(
-    member: Member,
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
     viewModel: MembersViewModel = viewModel { MembersViewModel() }
 ) {
     var editing by remember { mutableStateOf(false) }
-    var isLecturer by remember { mutableStateOf(member.isLecturer) }
-    DialogContainer("${member.name} adatlapja", 500.dp, close, navigate, commands = {
+    val member by viewModel.currentMember.collectAsState()
+    LaunchedEffect("key") { viewModel.currentMember.collect { println(it?.rank) } }
+
+    DialogContainer("${member!!.name} adatlapja", 500.dp, close, navigate, commands = {
         command(LucideSquarePen, "Adatok szerkesztése") {
             editing = true
         }
@@ -50,18 +51,25 @@ fun MemberDetailDialog(
                     editing = false
                     return@DataCard
                 }
-                isLecturer = data["isLecturer"]?.toBoolean() ?: member.isLecturer
-                // TODO: handle update
-                // TODO: this is temporal, 'cause editing state is gonna depend on the success of the backend update
-                editing = false
+                viewModel.updateMember(data) {
+                    when (it) {
+                        is DbResult.Success -> {
+                            editing = false
+                        }
+
+                        is DbResult.Failure -> {
+                            editing = true
+                        }
+                    }
+                }
             }) {
-                TextField("name", "Név", member.name)
-                TextField("rank", "Rang", member.computeRank(isLecturer), readOnly = true)
-                if (editing) CheckboxField("isLecturer", "Lektor", member.isLecturer)
-                if (member.isLeader) TextField(
+                TextField("name", "Név", member!!.name)
+                TextField("rank", "Rang", member!!.rank, readOnly = true)
+                if (editing) CheckboxField("islecturer", "Lektor", member!!.isLecturer)
+                if (member!!.isLeader) TextField(
                     "email",
                     "E-mail cím",
-                    member.email ?: "Nincs megadva",
+                    member!!.email ?: "Nincs megadva",
                     readOnly = true
                 ) // TODO: implementation of some sort
                 TextField(

@@ -12,18 +12,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.dialog
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import hu.ministransnaplo.app.models.Member
+import androidx.navigation.compose.*
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.screens.LoggedIn
 import hu.ministransnaplo.app.ui.screens.LoggedInScreen
@@ -36,7 +32,6 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
 import hu.ministransnaplo.app.ui.screens.members.*
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.launch
-import kotlin.reflect.typeOf
 
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -83,27 +78,41 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         navController.navigate(LoggedIn)
                     })
                 }
-                composable<Members> {
-                    MembersScreen(onNavigation = {
-                        navController.navigate(it)
-                    })
-                }
-                dialog<NewMember>(dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)) {
-                    NewMemberDialog(
-                        close = { navController.popBackStack() },
-                        navigate = { navController.navigate(route = it) }
-                    )
-                }
-                dialog<MemberDetail>(
-                    typeMap = mapOf(typeOf<Member>() to Member.NavType),
-                    dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
-                ) { backStackEntry ->
-                    val member: Member = backStackEntry.toRoute<MemberDetail>().member
-                    MemberDetailDialog(
-                        member,
-                        close = { navController.popBackStack() },
-                        navigate = { navController.navigate(it) }
-                    )
+                navigation<MembersRoot>(startDestination = Members) {
+                    composable<Members> { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<MembersRoot>()
+                        }
+                        val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
+                            MembersViewModel()
+                        }
+
+                        MembersScreen(onNavigation = {
+                            navController.navigate(it)
+                        }, sharedViewModel)
+                    }
+                    dialog<NewMember>(dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)) {
+                        NewMemberDialog(
+                            close = { navController.popBackStack() },
+                            navigate = { navController.navigate(route = it) }
+                        )
+                    }
+                    dialog<MemberDetail>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<MembersRoot>()
+                        }
+                        val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
+                            MembersViewModel()
+                        }
+                        MemberDetailDialog(
+                            close = { navController.popBackStack() },
+                            navigate = { navController.navigate(it) },
+                            sharedViewModel
+                        )
+                    }
+
                 }
             }
         }

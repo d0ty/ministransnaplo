@@ -27,6 +27,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 object Members : NavItem
 
+@Serializable
+object MembersRoot : NavItem
+
 enum class MemberTableColumns(val id: String?, val title: String) {
     Name("name", "Név"),
     Rank("login", "Rang"),
@@ -114,7 +117,8 @@ fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel =
                                     imageVector = LucideArrowRight.lightIcon,
                                     contentDescription = null,
                                     modifier = Modifier.clickable {
-                                        onNavigation(MemberDetail(member))
+                                        viewModel.selectMember(member)
+                                        onNavigation(MemberDetail)
                                     })
                             }
                         }
