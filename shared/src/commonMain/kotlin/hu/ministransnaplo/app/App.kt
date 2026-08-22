@@ -12,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -20,7 +21,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
+import androidx.navigation.toRoute
 import hu.ministransnaplo.app.ui.Theme
+import hu.ministransnaplo.app.ui.prompts.EmailPrompt
+import hu.ministransnaplo.app.ui.prompts.EmailPromptDialog
+import hu.ministransnaplo.app.ui.prompts.EmailPromptRequests
+import hu.ministransnaplo.app.ui.prompts.PromptResult
 import hu.ministransnaplo.app.ui.screens.LoggedIn
 import hu.ministransnaplo.app.ui.screens.LoggedInScreen
 import hu.ministransnaplo.app.ui.screens.auth.Login
@@ -30,8 +36,11 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
 import hu.ministransnaplo.app.ui.screens.members.*
+import hu.ministransnaplo.app.util.SimpleNavType
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.nullable
+import kotlin.reflect.typeOf
 
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +107,10 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         )
                     }
                     dialog<MemberDetail>(
-                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile),
+                        typeMap = mapOf(
+                            typeOf<PromptResult?>() to SimpleNavType(PromptResult.serializer().nullable)
+                        )
                     ) { backStackEntry ->
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<MembersRoot>()
@@ -106,6 +118,25 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
                             MembersViewModel()
                         }
+
+                        val entry = navController.currentBackStackEntry
+                        LaunchedEffect(entry, sharedViewModel) {
+                            entry?.savedStateHandle?.getStateFlow<PromptResult?>("result", null)
+                                ?.collect { result ->
+                                    if (result == null) return@collect;
+
+                                    when (result) {
+                                        is PromptResult.Email -> {
+                                            when (result.request) {
+                                                EmailPromptRequests.PROMOTE_MEMBER -> println("New leader email: ${result.email}")
+                                            }
+                                        }
+                                    }
+
+                                    entry.savedStateHandle["result"] = null
+                                }
+                        }
+
                         MemberDetailDialog(
                             close = { navController.popBackStack() },
                             navigate = { navController.navigate(it) },
@@ -113,6 +144,21 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         )
                     }
 
+                }
+                dialog<EmailPrompt>(
+                    typeMap = mapOf(
+                        typeOf<EmailPromptRequests>() to SimpleNavType(EmailPromptRequests.serializer()),
+                        typeOf<PromptResult>() to SimpleNavType(PromptResult.serializer())
+                    )
+                ) { backStackEntry ->
+                    val promptConfig: EmailPrompt = backStackEntry.toRoute()
+                    EmailPromptDialog(
+                        promptConfig,
+                        finish = {
+                            if (it !== null) navController.previousBackStackEntry?.savedStateHandle?.set("result", it)
+                            navController.popBackStack()
+                        }
+                    )
                 }
             }
         }

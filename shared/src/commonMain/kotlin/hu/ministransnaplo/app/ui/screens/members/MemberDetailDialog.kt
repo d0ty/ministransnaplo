@@ -21,9 +21,12 @@ import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DataCard
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
+import hu.ministransnaplo.app.ui.icons.lucide.LucideBolt
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideRotateCcw
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
+import hu.ministransnaplo.app.ui.prompts.EmailPrompt
+import hu.ministransnaplo.app.ui.prompts.EmailPromptRequests
 import hu.ministransnaplo.app.util.DbResult
 import kotlinx.serialization.Serializable
 
@@ -43,6 +46,14 @@ fun MemberDetailDialog(
     DialogContainer("${member!!.name} adatlapja", 500.dp, close, navigate, commands = {
         command(LucideSquarePen, "Adatok szerkesztése") {
             editing = true
+        }
+        command(LucideBolt, "Email prompt") {
+            navigate(
+                EmailPrompt(
+                    EmailPromptRequests.PROMOTE_MEMBER,
+                    "Teszteljünk most egy relative hosszú szöveget, amelynek célja, hogy megmagyarázzuk, miért is kell az e-mail cím."
+                )
+            )
         }
     }) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
