@@ -10,11 +10,10 @@ import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.DbResult
+import hu.ministransnaplo.app.util.executeSupabaseAction
 import hu.ministransnaplo.app.util.invokeWithJsonBody
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions
-import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
@@ -72,38 +71,34 @@ class MembersViewModel : AppViewModel() {
         }
     }
 
+    private suspend fun inviteLeaderInternal(member: Member, email: String): DbResult {
+        supabase.functions.invokeWithJsonBody("invite-user") {
+            put("member_id", member.id)
+            put("email", email)
+        }
+        return DbResult.Success.NoContent
+    }
+
     fun createMember(name: String, isLecturer: Boolean, email: String, onResult: (DbResult) -> Unit) {
         viewModelScope.launch(Dispatchers.Default) {
-            try {
+            executeSupabaseAction {
                 val member = supabase.from("member")
                     .insert(Member.New(guard = userState.value.guard!!.id, name = name, isLecturer = isLecturer)) {
                         select()
                     }.decodeSingle<Member>()
                 if (email.isBlank()) {
-                    onResult(DbResult.Success.WithContent(member))
-                    return@launch
+                    return@executeSupabaseAction DbResult.Success.WithContent(member)
                 }
-                supabase.functions.invokeWithJsonBody("invite-user") {
-                    put("member_id", member.id)
-                    put("email", email)
-                }
-                onResult(DbResult.Success.WithContent(member))
-            } catch (e: PostgrestRestException) {
-                onResult(if (e.code == "42501") DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
-                if (e.code != "42501") e.printStackTrace()
-            } catch (e: RestException) {
-                onResult(if (e.statusCode == 401) DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
-            } catch (e: Exception) {
-                onResult(DbResult.Failure.Error)
-                e.printStackTrace()
-            }
+                inviteLeaderInternal(member, email)
+                return@executeSupabaseAction DbResult.Success.WithContent(member)
+            }.also(onResult)
         }
     }
 
     fun updateMember(data: Map<String, DCFieldValue>, onResult: (DbResult) -> Unit) {
         if (currentMember.value == null) throw IllegalStateException("Can't update no member")
         viewModelScope.launch(Dispatchers.Default) {
-            try {
+            executeSupabaseAction {
                 supabase.from("member").update(data) {
                     select()
                     filter {
@@ -116,16 +111,18 @@ class MembersViewModel : AppViewModel() {
                     tableState.value.order.column,
                     tableState.value.order.ascending
                 )
-                onResult(DbResult.Success.NoContent)
-            } catch (e: PostgrestRestException) {
-                onResult(if (e.code == "42501") DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
-                if (e.code != "42501") e.printStackTrace()
-            } catch (e: RestException) {
-                onResult(if (e.statusCode == 401) DbResult.Failure.PermissionDenied else DbResult.Failure.Error)
-            } catch (e: Exception) {
-                onResult(DbResult.Failure.Error)
-                e.printStackTrace()
-            }
+                return@executeSupabaseAction DbResult.Success.NoContent
+            }.also(onResult)
+        }
+    }
+
+    fun inviteLeader(email: String, onResult: (DbResult) -> Unit) {
+        if (currentMember.value == null) throw IllegalStateException("Can't invite leader without a current member selected")
+        viewModelScope.launch(Dispatchers.Default) {
+            executeSupabaseAction {
+                inviteLeaderInternal(currentMember.value!!, email)
+            }.also(onResult)
+            fetchMemberTable()
         }
     }
 }

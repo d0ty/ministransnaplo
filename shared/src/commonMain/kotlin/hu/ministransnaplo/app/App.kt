@@ -128,7 +128,10 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                     when (result) {
                                         is PromptResult.Email -> {
                                             when (result.request) {
-                                                EmailPromptRequests.PROMOTE_MEMBER -> println("New leader email: ${result.email}")
+                                                EmailPromptRequests.PROMOTE_MEMBER ->
+                                                    sharedViewModel.inviteLeader(result.email) {
+                                                        // TODO: implement snackbars to display operation results
+                                                    }
                                             }
                                         }
                                     }
