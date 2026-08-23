@@ -24,4 +24,7 @@ sealed interface PromptResult {
      */
     @Serializable
     data class Email(val request: EmailPromptRequests, val email: String) : PromptResult
+
+    @Serializable
+    data class DestructiveAction(val request: DestructivePromptRequests, val confirmed: Boolean) : PromptResult
 }

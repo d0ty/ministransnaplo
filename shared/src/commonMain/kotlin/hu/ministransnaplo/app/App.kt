@@ -23,10 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import androidx.navigation.toRoute
 import hu.ministransnaplo.app.ui.Theme
-import hu.ministransnaplo.app.ui.prompts.EmailPrompt
-import hu.ministransnaplo.app.ui.prompts.EmailPromptDialog
-import hu.ministransnaplo.app.ui.prompts.EmailPromptRequests
-import hu.ministransnaplo.app.ui.prompts.PromptResult
+import hu.ministransnaplo.app.ui.prompts.*
 import hu.ministransnaplo.app.ui.screens.LoggedIn
 import hu.ministransnaplo.app.ui.screens.LoggedInScreen
 import hu.ministransnaplo.app.ui.screens.auth.Login
@@ -134,6 +131,15 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                                     }
                                             }
                                         }
+
+                                        is PromptResult.DestructiveAction -> {
+                                            when (result.request) {
+                                                DestructivePromptRequests.DELETE_MEMBER -> {
+                                                    println("Deleting ${sharedViewModel.currentMember.value?.name}")
+                                                    // TODO: member deletion implementation
+                                                }
+                                            }
+                                        }
                                     }
 
                                     entry.savedStateHandle["result"] = null
@@ -159,6 +165,20 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         promptConfig,
                         finish = {
                             if (it !== null) navController.previousBackStackEntry?.savedStateHandle?.set("result", it)
+                            navController.popBackStack()
+                        }
+                    )
+                }
+                dialog<DestructiveActionPrompt>(
+                    typeMap = mapOf(
+                        typeOf<DestructivePromptRequests>() to SimpleNavType(DestructivePromptRequests.serializer()),
+                    )
+                ) { backStackEntry ->
+                    val promptConfig: DestructiveActionPrompt = backStackEntry.toRoute()
+                    DestructiveActionPromptDialog(
+                        promptConfig,
+                        finish = {
+                            navController.previousBackStackEntry?.savedStateHandle?.set("result", it)
                             navController.popBackStack()
                         }
                     )

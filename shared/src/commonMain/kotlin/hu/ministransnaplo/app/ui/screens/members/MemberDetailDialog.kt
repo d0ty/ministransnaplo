@@ -21,10 +21,9 @@ import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DataCard
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
-import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
-import hu.ministransnaplo.app.ui.icons.lucide.LucideRotateCcw
-import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
-import hu.ministransnaplo.app.ui.icons.lucide.LucideUserStar
+import hu.ministransnaplo.app.ui.icons.lucide.*
+import hu.ministransnaplo.app.ui.prompts.DestructiveActionPrompt
+import hu.ministransnaplo.app.ui.prompts.DestructivePromptRequests
 import hu.ministransnaplo.app.ui.prompts.EmailPrompt
 import hu.ministransnaplo.app.ui.prompts.EmailPromptRequests
 import hu.ministransnaplo.app.util.DbResult
@@ -52,6 +51,15 @@ fun MemberDetailDialog(
                 EmailPrompt(
                     EmailPromptRequests.PROMOTE_MEMBER,
                     "Kérünk add meg a tag e-mail címét, amivel be fog tudni jelentkezni!"
+                )
+            )
+        }
+        command(LucideBolt, "Destruction") {
+            navigate(
+                DestructiveActionPrompt(
+                    DestructivePromptRequests.DELETE_MEMBER,
+                    "Biztosan törölni szeretnéd ${member!!.name}-t ?",
+                    "A tag törlése végleges, és minden adatát elveszíted."
                 )
             )
         }
