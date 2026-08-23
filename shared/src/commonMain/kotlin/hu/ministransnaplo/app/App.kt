@@ -33,6 +33,7 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
 import hu.ministransnaplo.app.ui.screens.members.*
+import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.SimpleNavType
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.launch
@@ -135,8 +136,16 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                         is PromptResult.DestructiveAction -> {
                                             when (result.request) {
                                                 DestructivePromptRequests.DELETE_MEMBER -> {
-                                                    println("Deleting ${sharedViewModel.currentMember.value?.name}")
-                                                    // TODO: member deletion implementation
+                                                    sharedViewModel.deleteMember {
+                                                        //TODO: snackbar
+                                                        when (it) {
+                                                            is DbResult.Success -> {
+                                                                navController.popBackStack()
+                                                            }
+
+                                                            else -> println("ERROR: Failed to delete member")
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }

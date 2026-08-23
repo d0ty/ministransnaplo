@@ -54,7 +54,7 @@ fun MemberDetailDialog(
                 )
             )
         }
-        command(LucideBolt, "Destruction") {
+        command(LucideOctagonX, "Tag törlése") {
             navigate(
                 DestructiveActionPrompt(
                     DestructivePromptRequests.DELETE_MEMBER,

@@ -71,6 +71,14 @@ class MembersViewModel : AppViewModel() {
         }
     }
 
+    private fun fetchMemberTable() {
+        fetchMemberTable(
+            tableState.value.query,
+            tableState.value.order.column,
+            tableState.value.order.ascending
+        )
+    }
+
     private suspend fun inviteLeaderInternal(member: Member, email: String): DbResult {
         supabase.functions.invokeWithJsonBody("invite-user") {
             put("member_id", member.id)
@@ -106,11 +114,7 @@ class MembersViewModel : AppViewModel() {
                     }
                 }.decodeSingle<Member>()
                     .also { updated -> currentMember.update { updated.copy(email = it?.email) } }
-                fetchMemberTable(
-                    tableState.value.query,
-                    tableState.value.order.column,
-                    tableState.value.order.ascending
-                )
+                fetchMemberTable()
                 return@executeSupabaseAction DbResult.Success.NoContent
             }.also(onResult)
         }
@@ -123,6 +127,22 @@ class MembersViewModel : AppViewModel() {
                 inviteLeaderInternal(currentMember.value!!, email)
             }.also(onResult)
             fetchMemberTable()
+        }
+    }
+
+    fun deleteMember(onResult: (DbResult) -> Unit) {
+        if (currentMember.value == null) throw IllegalStateException("Can't delete member without a current member selected")
+        viewModelScope.launch(Dispatchers.Default) {
+            executeSupabaseAction {
+                supabase.from("member").delete {
+                    filter {
+                        eq("id", currentMember.value!!.id)
+                    }
+                }
+                currentMember.update { null }
+                fetchMemberTable()
+                DbResult.Success.NoContent
+            }.also(onResult)
         }
     }
 }
