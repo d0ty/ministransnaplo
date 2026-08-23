@@ -16,6 +16,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -134,14 +135,23 @@ class MembersViewModel : AppViewModel() {
         if (currentMember.value == null) throw IllegalStateException("Can't delete member without a current member selected")
         viewModelScope.launch(Dispatchers.Default) {
             executeSupabaseAction {
+                if (currentMember.value!!.isLeader) {
+                    val userDeleteResp = supabase.functions.invokeWithJsonBody("delete-user") {
+                        put("member_login", currentMember.value!!.userId)
+                    }
+                    if (!userDeleteResp.status.isSuccess()) {
+                        return@executeSupabaseAction DbResult.Failure.Error
+                    }
+                }
                 supabase.from("member").delete {
                     filter {
                         eq("id", currentMember.value!!.id)
                     }
                 }
+                val result = DbResult.Success.WithContent(currentMember.value!!)
                 currentMember.update { null }
                 fetchMemberTable()
-                DbResult.Success.NoContent
+                result
             }.also(onResult)
         }
     }

@@ -5,15 +5,8 @@
 
 import "@supabase/functions-js/edge-runtime.d.ts";
 import {withSupabase} from "@supabase/server";
-import {cors_headers} from "../_shared/index.ts";
+import {cors_headers, db_error_resp, no_content_success, permission_error_resp,} from "../_shared/index.ts";
 
-const permission_error_resp = Response.json({
-    message: "You have no permission to do this!",
-}, { status: 401, headers: cors_headers });
-const db_error_resp = Response.json({ message: "Database error occurred!" }, {
-    status: 502,
-    headers: cors_headers,
-});
 export default {
     fetch: withSupabase(
         { auth: ["user"], cors: cors_headers },
@@ -68,7 +61,7 @@ export default {
                 return db_error_resp;
             }
 
-            return new Response(null, { status: 204, headers: cors_headers });
+            return no_content_success;
         },
     ),
 };
