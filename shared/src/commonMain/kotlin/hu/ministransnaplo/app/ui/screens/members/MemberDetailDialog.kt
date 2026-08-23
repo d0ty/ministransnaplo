@@ -63,6 +63,17 @@ fun MemberDetailDialog(
                 )
             )
         }
+        if (member!!.isLeader) command(LucideUserRoundKey, "2. faktor visszaállítása") {
+            navigate(
+                DestructiveActionPrompt(
+                    DestructivePromptRequests.RESET_MEMBER_MFA,
+                    "Biztosan visszaállítod ${member!!.name} 2FA kulcsait?",
+                    "A második faktor visszaállítása után ${member!!.name}-nek új kulcsokat kell beállítani magának." +
+                            "Csak akkor állítsd vissza a kulcsokat, ha ${member!!.name} elvesztette a kulcsait" +
+                            " vagy nem tud bejelentkezni a fiókjába."
+                )
+            )
+        }
     }) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
             DataCard(modifier = Modifier.fillMaxFlexSpace(), editing = editing, onEditFinishes = { data ->

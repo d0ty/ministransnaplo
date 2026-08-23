@@ -4,23 +4,21 @@
  */
 
 import "@supabase/functions-js/edge-runtime.d.ts";
-import {withSupabase} from "@supabase/server";
-import {cors_headers, db_error_resp, no_content_success, permission_error_resp,} from "../_shared/index.ts";
+import { withSupabase } from "@supabase/server";
+import {
+    check_is_guard_owner,
+    cors_headers,
+    db_error_resp,
+    no_content_success,
+    permission_error_resp,
+} from "../_shared/index.ts";
 
 export default {
     fetch: withSupabase(
         { auth: ["user"], cors: cors_headers },
         async (req, ctx) => {
-            const { data: { id: guard_id, owner }, error: guard_fetch_error } =
-                await ctx.supabase
-                    .rpc("get_my_guard");
-            if (guard_fetch_error) {
-                console.error(guard_fetch_error);
-                return db_error_resp;
-            }
-            if (ctx.userClaims?.id !== owner) {
-                return permission_error_resp;
-            }
+            const guard_result = await check_is_guard_owner(ctx);
+            if (guard_result.error !== null) return guard_result.error;
 
             const { member_id, email } = await req.json();
 
@@ -36,7 +34,7 @@ export default {
                 return db_error_resp;
             }
 
-            if (guard_id !== member_guard_id) {
+            if (guard_result.guard_id !== member_guard_id) {
                 return permission_error_resp;
             }
 

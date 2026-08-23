@@ -155,4 +155,18 @@ class MembersViewModel : AppViewModel() {
             }.also(onResult)
         }
     }
+
+    fun resetLeaderMFA(onResult: (DbResult) -> Unit) {
+        if (currentMember.value == null) throw IllegalStateException("Can't reset no leader member MFA")
+        if (currentMember.value!!.isLeader.not()) throw IllegalStateException("Can only reset leader member MFA")
+        viewModelScope.launch(Dispatchers.Default) {
+            executeSupabaseAction {
+                supabase.functions.invokeWithJsonBody("reset-mfa") {
+                    put("user_id", currentMember.value!!.userId)
+                }.status.isSuccess().let {
+                    if (it) DbResult.Success.NoContent else DbResult.Failure.Error
+                }
+            }.also(onResult)
+        }
+    }
 }

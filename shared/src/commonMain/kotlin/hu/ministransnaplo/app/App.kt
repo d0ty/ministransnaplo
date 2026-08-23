@@ -147,6 +147,12 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                                         }
                                                     }
                                                 }
+
+                                                DestructivePromptRequests.RESET_MEMBER_MFA -> {
+                                                    sharedViewModel.resetLeaderMFA {
+                                                        // TODO: snackbar
+                                                    }
+                                                }
                                             }
                                         }
                                     }
