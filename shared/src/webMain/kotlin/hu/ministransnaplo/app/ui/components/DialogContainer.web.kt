@@ -38,6 +38,7 @@ actual fun DialogContainer(
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable (() -> Unit),
     commands: DialogCommandRegistry.() -> Unit,
+    commandsEnabled: Boolean,
     content: @Composable () -> Unit
 ) {
     val commands = DialogCommandRegistry().apply(commands)
@@ -61,7 +62,7 @@ actual fun DialogContainer(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    if (commands.isNotEmpty) Image(
+                    if (commands.isNotEmpty && commandsEnabled) Image(
                         LucideMenu,
                         "",
                         Modifier.size(24.dp).clickable { popupShown = true }.onGloballyPositioned {

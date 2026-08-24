@@ -29,6 +29,7 @@ actual fun DialogContainer(
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable (() -> Unit),
     commands: DialogCommandRegistry.() -> Unit,
+    commandsEnabled: Boolean,
     content: @Composable () -> Unit
 ) {
     val dialogCommands = DialogCommandRegistry().apply(commands)
@@ -51,9 +52,12 @@ actual fun DialogContainer(
                     Spacer(Modifier.width(8.dp))
                     Text(text = title, style = titleBarStyle.textStyle, modifier = Modifier.fillMaxWidth(0.8f))
                 }
-                if (dialogCommands.isNotEmpty) Image(LucideMenu, "", Modifier.size(titleBarStyle.iconSize).clickable {
-                    openSheet()
-                })
+                if (dialogCommands.isNotEmpty && commandsEnabled) Image(
+                    LucideMenu,
+                    "",
+                    Modifier.size(titleBarStyle.iconSize).clickable {
+                        openSheet()
+                    })
                 trailingIcon()
             }
             Spacer(Modifier.height(48.dp))

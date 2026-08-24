@@ -74,7 +74,7 @@ fun MemberDetailDialog(
                 )
             )
         }
-    }) {
+    }, commandsEnabled = viewModel.userState.value.isGuardOwner) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
             DataCard(modifier = Modifier.fillMaxFlexSpace(), editing = editing, onEditFinishes = { data ->
                 if (data == null) {

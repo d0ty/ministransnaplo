@@ -36,5 +36,6 @@ expect fun DialogContainer(
     navigate: (NavItem) -> Unit,
     trailingIcon: @Composable () -> Unit = {},
     commands: DialogCommandRegistry.() -> Unit = {},
+    commandsEnabled: Boolean = true,
     content: @Composable () -> Unit
 )
