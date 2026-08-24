@@ -100,7 +100,7 @@ class MembersViewModel : AppViewModel() {
                 }
                 inviteLeaderInternal(member, email)
                 return@executeSupabaseAction DbResult.Success.WithContent(member)
-            }.also(onResult)
+            }.also { fetchMemberTable() }.also(onResult)
         }
     }
 

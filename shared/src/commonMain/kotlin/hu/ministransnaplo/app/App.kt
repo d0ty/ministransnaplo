@@ -117,7 +117,8 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                 sharedViewModel.viewModelScope.launch {
                                     snackbarHostState.showSnackbar(it)
                                 }
-                            }
+                            },
+                            viewModel = sharedViewModel
                         )
                     }
                     dialog<MemberDetail>(
