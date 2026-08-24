@@ -6,7 +6,9 @@
 package hu.ministransnaplo.app.ui.screens.members
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,9 +29,9 @@ object NewMember : NavItem
 fun NewMemberDialog(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: MembersViewModel = viewModel { MembersViewModel() }
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     Column {
         DialogContainer("Új tag hozzáadása", 300.dp, close, navigate) {
@@ -61,21 +63,21 @@ fun NewMemberDialog(
                     onClick = {
                         if (memberName.isEmpty()) {
                             scope.launch {
-                                snackbarHostState.showSnackbar("A név mező nem lehet üres!")
+                                showSnackbar("A név mező nem lehet üres!")
                                 close()
                             }
                             return@SubmitButton
                         }
                         if (email.isNotEmpty() && !FormValidator.EMAIL.validate(email)) {
                             scope.launch {
-                                snackbarHostState.showSnackbar("Az email cím nem érvényes!")
+                                showSnackbar("Az email cím nem érvényes!")
                                 close()
                             }
                             return@SubmitButton
                         }
                         viewModel.createMember(memberName, isLecturer, email) { result ->
                             scope.launch {
-                                snackbarHostState.showSnackbar(
+                                showSnackbar(
                                     when (result) {
                                         is DbResult.Success -> "Sikeres tagfelvétel!"
                                         is DbResult.Failure -> "Hiba történt a tagfelvétel során: ${result.description}"
@@ -91,6 +93,4 @@ fun NewMemberDialog(
             }
         }
     }
-    Spacer(Modifier.height(32.dp))
-    SnackbarHost(hostState = snackbarHostState)
 }

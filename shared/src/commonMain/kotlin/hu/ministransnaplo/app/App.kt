@@ -8,9 +8,7 @@ package hu.ministransnaplo.app
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -19,9 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import androidx.navigation.toRoute
+import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.prompts.*
 import hu.ministransnaplo.app.ui.screens.LoggedIn
@@ -46,6 +46,7 @@ import kotlin.reflect.typeOf
 fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     scope.launch {
         viewModel.userState.collect {
             when (it.mfaState) {
@@ -57,12 +58,13 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
         }
     }
     MaterialTheme(colorScheme = Theme.colorScheme) {
-        Surface(
+        Scaffold(
             modifier = Modifier
                 .safeContentPadding()
                 .fillMaxSize(),
             contentColor = Color.White,
-            color = Theme.colorScheme.background
+            containerColor = Theme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) {
             NavHost(navController = navController, startDestination = Login) {
                 composable<Login> {
@@ -98,10 +100,24 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                             navController.navigate(it)
                         }, sharedViewModel)
                     }
-                    dialog<NewMember>(dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)) {
+                    dialog<NewMember>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<MembersRoot>()
+                        }
+                        val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
+                            MembersViewModel()
+                        }
+
                         NewMemberDialog(
                             close = { navController.popBackStack() },
-                            navigate = { navController.navigate(route = it) }
+                            navigate = { navController.navigate(route = it) },
+                            showSnackbar = {
+                                sharedViewModel.viewModelScope.launch {
+                                    snackbarHostState.showSnackbar(it)
+                                }
+                            }
                         )
                     }
                     dialog<MemberDetail>(
@@ -128,7 +144,10 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                             when (result.request) {
                                                 EmailPromptRequests.PROMOTE_MEMBER ->
                                                     sharedViewModel.inviteLeader(result.email) {
-                                                        // TODO: implement snackbars to display operation results
+                                                        when (it) {
+                                                            is DbResult.Success -> snackbarHostState.showSnackbar("${sharedViewModel.currentMember.value?.name} sikeresen előléptetve!")
+                                                            is DbResult.Failure -> snackbarHostState.showSnackbar("Hiba az előléptetés közben!")
+                                                        }
                                                     }
                                             }
                                         }
@@ -137,20 +156,24 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                             when (result.request) {
                                                 DestructivePromptRequests.DELETE_MEMBER -> {
                                                     sharedViewModel.deleteMember {
-                                                        //TODO: snackbar
                                                         when (it) {
-                                                            is DbResult.Success -> {
-                                                                navController.popBackStack()
+                                                            is DbResult.Success.WithContent<*> -> {
+                                                                val member: Member = it.result as Member
+                                                                snackbarHostState.showSnackbar("${member.name} sikeresen törölve")
                                                             }
 
-                                                            else -> println("ERROR: Failed to delete member")
+                                                            else -> snackbarHostState.showSnackbar("Hiba a tag törlése közben!")
                                                         }
                                                     }
+                                                    navController.popBackStack()
                                                 }
 
                                                 DestructivePromptRequests.RESET_MEMBER_MFA -> {
                                                     sharedViewModel.resetLeaderMFA {
-                                                        // TODO: snackbar
+                                                        when (it) {
+                                                            is DbResult.Success -> snackbarHostState.showSnackbar("${sharedViewModel.currentMember.value?.name} 2FA kulcsai sikeresen visszaállítva!")
+                                                            is DbResult.Failure -> snackbarHostState.showSnackbar("Hiba a 2FA kulcsok visszaállítása közben!")
+                                                        }
                                                     }
                                                 }
                                             }

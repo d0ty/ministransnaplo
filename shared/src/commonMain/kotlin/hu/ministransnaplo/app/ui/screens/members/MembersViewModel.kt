@@ -121,20 +121,21 @@ class MembersViewModel : AppViewModel() {
         }
     }
 
-    fun inviteLeader(email: String, onResult: (DbResult) -> Unit) {
+    fun inviteLeader(email: String, onResult: suspend (DbResult) -> Unit) {
         if (currentMember.value == null) throw IllegalStateException("Can't invite leader without a current member selected")
         viewModelScope.launch(Dispatchers.Default) {
-            executeSupabaseAction {
+            val result = executeSupabaseAction {
                 inviteLeaderInternal(currentMember.value!!, email)
-            }.also(onResult)
+            }
             fetchMemberTable()
+            onResult(result)
         }
     }
 
-    fun deleteMember(onResult: (DbResult) -> Unit) {
+    fun deleteMember(onResult: suspend (DbResult) -> Unit) {
         if (currentMember.value == null) throw IllegalStateException("Can't delete member without a current member selected")
         viewModelScope.launch(Dispatchers.Default) {
-            executeSupabaseAction {
+            val result = executeSupabaseAction {
                 if (currentMember.value!!.isLeader) {
                     val userDeleteResp = supabase.functions.invokeWithJsonBody("delete-user") {
                         put("member_login", currentMember.value!!.userId)
@@ -152,21 +153,23 @@ class MembersViewModel : AppViewModel() {
                 currentMember.update { null }
                 fetchMemberTable()
                 result
-            }.also(onResult)
+            }
+            onResult(result)
         }
     }
 
-    fun resetLeaderMFA(onResult: (DbResult) -> Unit) {
+    fun resetLeaderMFA(onResult: suspend (DbResult) -> Unit) {
         if (currentMember.value == null) throw IllegalStateException("Can't reset no leader member MFA")
         if (currentMember.value!!.isLeader.not()) throw IllegalStateException("Can only reset leader member MFA")
         viewModelScope.launch(Dispatchers.Default) {
-            executeSupabaseAction {
+            val result = executeSupabaseAction {
                 supabase.functions.invokeWithJsonBody("reset-mfa") {
                     put("user_id", currentMember.value!!.userId)
                 }.status.isSuccess().let {
                     if (it) DbResult.Success.NoContent else DbResult.Failure.Error
                 }
-            }.also(onResult)
+            }
+            onResult(result)
         }
     }
 }
