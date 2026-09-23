@@ -12,6 +12,7 @@ import hu.ministransnaplo.app.ui.icons.lucide.LucidePodium
 import hu.ministransnaplo.app.ui.icons.lucide.LucideUsers
 import hu.ministransnaplo.app.ui.screens.LoggedIn
 import hu.ministransnaplo.app.ui.screens.members.Members as MembersDest
+import hu.ministransnaplo.app.ui.screens.programs.Programs as ProgramsDest
 
 data class NavSubmenuItem(val title: String, val destination: NavItem = LoggedIn)
 
@@ -30,7 +31,7 @@ enum class NavMenuItems(
 ) : NavMenuItem {
     Home("Kezdőlap", LucideHouse, LoggedIn), // TODO: replace with actual destination
     Members("Tagok", LucideUsers, MembersDest),
-    Programs("Programok", LucideCalendarDays, LoggedIn), // TODO: replace with actual destination
+    Programs("Programok", LucideCalendarDays, ProgramsDest),
 
     // TODO: replace with actual destination
     Competition(

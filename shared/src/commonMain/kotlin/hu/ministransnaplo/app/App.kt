@@ -33,6 +33,7 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
 import hu.ministransnaplo.app.ui.screens.members.*
+import hu.ministransnaplo.app.ui.screens.programs.*
 import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.SimpleNavType
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
@@ -193,6 +194,43 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                     }
 
                 }
+                navigation<ProgramsRoot>(startDestination = Programs) {
+                    composable<Programs> { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<ProgramsRoot>()
+                        }
+                        val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
+                            ProgramsViewModel()
+                        }
+
+                        ProgramsScreen(onNavigation = {
+                            navController.navigate(it)
+                        }, sharedViewModel)
+                    }
+                    dialog<NewProgram>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<ProgramsRoot>()
+                        }
+                        val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
+                            ProgramsViewModel()
+                        }
+
+                        NewProgramDialog(
+                            close = { navController.popBackStack() },
+                            navigate = { navController.navigate(route = it) },
+                            showSnackbar = {
+                                sharedViewModel.viewModelScope.launch {
+                                    snackbarHostState.showSnackbar(it)
+                                }
+                            },
+                            viewModel = sharedViewModel
+                        )
+                    }
+
+                }
+
                 dialog<EmailPrompt>(
                     typeMap = mapOf(
                         typeOf<EmailPromptRequests>() to SimpleNavType(EmailPromptRequests.serializer()),

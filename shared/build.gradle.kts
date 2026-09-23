@@ -71,6 +71,7 @@ kotlin {
             implementation(libs.coil3.ktor)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.windegde.table)
+            runtimeOnly(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
