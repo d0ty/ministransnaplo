@@ -5,7 +5,7 @@
 
 package hu.ministransnaplo.app.util
 
-import kotlinx.datetime.format
+import kotlinx.datetime.*
 import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
@@ -37,4 +37,14 @@ fun calculateInterval(start: Long, end: Long): String {
     val minutes = duration / (1000 * 60) % 60
     val seconds = duration / 1000 % 60
     return "$days days $hours hours $minutes minutes $seconds seconds"
+}
+
+fun getStartDateOfWeek(date: LocalDate): LocalDate {
+    val dayOfWeek = date.dayOfWeek
+    val daysToSubtract = if (dayOfWeek.isoDayNumber >= DayOfWeek.MONDAY.isoDayNumber) {
+        dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber
+    } else {
+        dayOfWeek.isoDayNumber + 7 - DayOfWeek.MONDAY.isoDayNumber
+    }
+    return date.minus(daysToSubtract, DateTimeUnit.DAY)
 }
