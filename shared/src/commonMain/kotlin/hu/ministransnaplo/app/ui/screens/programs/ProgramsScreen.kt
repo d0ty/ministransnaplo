@@ -5,26 +5,38 @@
 
 package hu.ministransnaplo.app.ui.screens.programs
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.NavContainer
 import hu.ministransnaplo.app.ui.NavItem
+import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.components.FullScreenCard
 import hu.ministransnaplo.app.ui.components.ScreenTitleBar
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCalendarPlus
+import hu.ministransnaplo.app.ui.icons.lucide.LucideChevronLeft
+import hu.ministransnaplo.app.ui.icons.lucide.LucideChevronRight
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
 
 @Serializable
 object Programs : NavItem
@@ -104,7 +116,109 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
                     }
 
                 }
+                val currentView = calendarState.currentViewData
+                if (currentView == null) {
+                    Box(Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(Modifier.align(Alignment.Center).size(36.dp))
+                    }
+                } else {
+                    Column {
+                        Row {
+                            Text(
+                                currentView.title,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                fontSize = 20.sp
+                            )
+                            Spacer(Modifier.width(24.dp))
+                            Image(
+                                LucideChevronLeft,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp).clickable {
+                                    // TODO: implement calendar navigation
+                                },
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Image(
+                                LucideChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp).clickable {
+                                    // TODO: implement calendar navigation
+                                },
+                            )
+                        }
+                        Spacer(Modifier.height(32.dp))
+                        when (calendarState.viewMode) {
+                            ProgramsViewMode.MONTHLY -> MonthlyProgramsView(currentView) {
+                                // TODO: handle navigation
+                            }
+
+                            ProgramsViewMode.WEEKLY -> WeeklyProgramsView(currentView) {
+                                // TODO: handle navigation
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
+
+expect fun getDaysOfWeek(): Array<String>
+
+@Composable
+fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (NavItem) -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            getDaysOfWeek().forEach {
+                Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.Center) {
+                    Text(it)
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Column(Modifier.fillMaxSize()) {
+            val tz = TimeZone.currentSystemDefault()
+            viewData.weeks.forEachIndexed { weekIdx, week ->
+                Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxSize().weight(1f)) {
+                    val startDate = week.weekStart.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    week.getCategorizedPrograms().forEachIndexed { index, dailyProgram ->
+                        Column(
+                            Modifier.padding(4.dp).clip(RoundedCornerShape(4.dp))
+                                .background(color = Theme.colorScheme.background).fillMaxSize().weight(1f),
+                            verticalArrangement = Arrangement.Top,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val date = startDate.plus(index, DateTimeUnit.DAY)
+                            Text(
+                                date.day.toString(),
+                                fontWeight = FontWeight.Bold,
+                                color = if (weekIdx in 1..3 || (weekIdx == 4 && startDate.month == date.month) || (weekIdx == 0 && startDate.month != date.month)) Color.White else Color.Gray,
+                                modifier = if (Clock.System.todayIn(tz) == date) Modifier.padding(12.dp, 4.dp)
+                                    .clip(RoundedCornerShape(4.dp)).background(Theme.colorScheme.surface) else Modifier
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            for (program in dailyProgram) {
+                                Row(
+                                    Modifier.padding(4.dp).clip(RoundedCornerShape(4.dp)).background(program.color)
+                                        .fillMaxWidth().clickable {
+                                            // TODO: navigate to event details
+                                        }) {
+                                    Text(
+                                        program.title,
+                                        fontSize = 12.sp,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(4.dp, 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+expect fun WeeklyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (NavItem) -> Unit)

@@ -5,13 +5,12 @@
 
 package hu.ministransnaplo.app.ui.screens.programs
 
+import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Program
-import hu.ministransnaplo.app.util.DbResult
-import hu.ministransnaplo.app.util.calculateInterval
-import hu.ministransnaplo.app.util.executeSupabaseAction
-import hu.ministransnaplo.app.util.getStartDateOfWeek
+import hu.ministransnaplo.app.util.*
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
@@ -32,20 +31,35 @@ class ProgramsViewModel : AppViewModel() {
         val nextViewData: ViewData? = null
     )
 
-    data class ViewData(
-        val startDate: Instant,
-        val endDate: Instant,
-        val weeks: ArrayList<WeekData> = arrayListOf(),
+    class ViewData(
+        viewMode: ProgramsViewMode,
+        _startDate: Instant,
+        _endDate: Instant,
+        _weeks: ArrayList<WeekData> = arrayListOf(),
     ) {
+        var title: String = ""
+            private set
+        val startDate = _startDate
+        val endDate = _endDate
+        val weeks: ArrayList<WeekData> = _weeks
+
+
         init {
             val tz = TimeZone.currentSystemDefault()
-            val weekNumber = startDate.until(endDate, DateTimeUnit.WEEK, tz)
+            val weekNumber = startDate.until(endDate, DateTimeUnit.WEEK, tz) + 1
             var currentWeek = getStartDateOfWeek(startDate.toLocalDateTime(tz).date)
                 .atStartOfDayIn(tz)
             for (weekIdx in 0..<weekNumber) {
                 weeks.add(WeekData(currentWeek))
                 currentWeek = currentWeek.plus(168, DateTimeUnit.HOUR)
             }
+            val startLocalDate = startDate.toLocalDateTime(tz)
+            val endLocalDate = endDate.toLocalDateTime(tz)
+            title = "${startLocalDate.year}. ${getMonthName(startLocalDate.month).capitalize(Locale.current)} ${
+                if (viewMode == ProgramsViewMode.WEEKLY) "${startLocalDate.day} - ${
+                    if (endLocalDate.month != startLocalDate.month) getMonthName(endLocalDate.month).capitalize(Locale.current) + " " else ""
+                } ${endLocalDate.day}." else ""
+            }"
         }
 
         fun add(program: Program) {
@@ -59,7 +73,15 @@ class ProgramsViewModel : AppViewModel() {
     data class WeekData(
         val weekStart: Instant,
         val programs: ArrayList<Program> = arrayListOf()
-    )
+    ) {
+        fun getCategorizedPrograms(): ArrayList<List<Program>> {
+            val output = arrayListOf<List<Program>>()
+            for (dayOfWeek in DayOfWeek.entries) {
+                output.add(programs.filter { it.startDate.toLocalDateTime(TimeZone.currentSystemDefault()).dayOfWeek == dayOfWeek })
+            }
+            return output
+        }
+    }
 
     val calendarState: StateFlow<ViewState>
         field = MutableStateFlow(ViewState())
@@ -106,9 +128,9 @@ class ProgramsViewModel : AppViewModel() {
                         }
                     }
                 }.decodeAs<List<Program>>()
-                val prevView = ViewData(prevViewStart, currentViewStart)
-                val currentView = ViewData(currentViewStart, nextViewEnd)
-                val nextView = ViewData(nextViewStart, nextViewEnd)
+                val prevView = ViewData(viewMode, prevViewStart, currentViewStart)
+                val currentView = ViewData(viewMode, currentViewStart, nextViewStart)
+                val nextView = ViewData(viewMode, nextViewStart, nextViewEnd)
                 data.forEach {
                     if (it.startDate in prevViewStart..<currentViewStart) prevView.add(it)
                     else if (it.startDate in currentViewStart..<nextViewStart) currentView.add(it)

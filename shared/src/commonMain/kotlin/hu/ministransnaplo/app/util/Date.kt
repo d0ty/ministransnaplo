@@ -48,3 +48,9 @@ fun getStartDateOfWeek(date: LocalDate): LocalDate {
     }
     return date.minus(daysToSubtract, DateTimeUnit.DAY)
 }
+
+fun getMonthName(month: Month) = arrayOf(
+    "január", "február", "március", "árpilis",
+    "május", "június", "július", "augusztus",
+    "szeptember", "október", "november", "december"
+)[month.ordinal]
