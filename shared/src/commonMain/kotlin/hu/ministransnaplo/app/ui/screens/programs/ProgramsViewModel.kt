@@ -39,13 +39,14 @@ class ProgramsViewModel : AppViewModel() {
     ) {
         var title: String = ""
             private set
-        val startDate = _startDate
+        val startDate: Instant
         val endDate = _endDate
         val weeks: ArrayList<WeekData> = _weeks
 
 
         init {
             val tz = TimeZone.currentSystemDefault()
+            startDate = _startDate.apply { if (viewMode == ProgramsViewMode.MONTHLY) plus(24, DateTimeUnit.HOUR) }
             val weekNumber = startDate.until(endDate, DateTimeUnit.WEEK, tz) + 1
             var currentWeek = getStartDateOfWeek(startDate.toLocalDateTime(tz).date)
                 .atStartOfDayIn(tz)
@@ -90,7 +91,39 @@ class ProgramsViewModel : AppViewModel() {
         fetchCalendar(ProgramsViewMode.MONTHLY, Clock.System.now())
     }
 
-    fun fetchCalendar(viewMode: ProgramsViewMode, queryDate: Instant) {
+    fun changeViewMode(mode: ProgramsViewMode) {
+        fetchCalendar(mode, calendarState.value.currentViewData?.startDate ?: Clock.System.now())
+    }
+
+    fun swipeBack() {
+        calendarState.update {
+            it.copy(
+                prevViewData = null,
+                currentViewData = it.prevViewData,
+                nextViewData = it.currentViewData
+            )
+        }
+        fetchCalendar(
+            calendarState.value.viewMode,
+            calendarState.value.currentViewData?.startDate ?: Clock.System.now()
+        )
+    }
+
+    fun swipeForward() {
+        calendarState.update {
+            it.copy(
+                prevViewData = it.currentViewData,
+                currentViewData = it.nextViewData,
+                nextViewData = null
+            )
+        }
+        fetchCalendar(
+            calendarState.value.viewMode,
+            calendarState.value.currentViewData?.startDate ?: Clock.System.now()
+        )
+    }
+
+    private fun fetchCalendar(viewMode: ProgramsViewMode, queryDate: Instant) {
         calendarState.update { it.copy(viewMode = viewMode, isLoading = true) }
         val queryDate = queryDate.toLocalDateTime(TimeZone.currentSystemDefault()).date
         val tz = TimeZone.currentSystemDefault()

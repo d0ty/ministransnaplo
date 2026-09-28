@@ -89,9 +89,8 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
             FullScreenCard(Modifier.fillMaxSize().fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     TextButton(onClick = {
-                        if (calendarState.viewMode != ProgramsViewMode.MONTHLY) viewModel.fetchCalendar(
-                            ProgramsViewMode.MONTHLY,
-                            calendarState.currentViewData?.startDate!!
+                        if (calendarState.viewMode != ProgramsViewMode.MONTHLY) viewModel.changeViewMode(
+                            ProgramsViewMode.MONTHLY
                         )
                     }) {
                         Text(
@@ -99,19 +98,18 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
                             textDecoration = if (calendarState.viewMode == ProgramsViewMode.MONTHLY) TextDecoration.Underline else null,
                             fontWeight = FontWeight.Medium,
                             color = Color.White,
+                            fontSize = 18.sp
                         )
                     }
                     TextButton(onClick = {
-                        if (calendarState.viewMode != ProgramsViewMode.WEEKLY) viewModel.fetchCalendar(
-                            ProgramsViewMode.WEEKLY,
-                            calendarState.currentViewData?.startDate!!
-                        )
+                        if (calendarState.viewMode != ProgramsViewMode.WEEKLY) viewModel.changeViewMode(ProgramsViewMode.WEEKLY)
                     }) {
                         Text(
                             "Hét",
                             textDecoration = if (calendarState.viewMode == ProgramsViewMode.WEEKLY) TextDecoration.Underline else null,
                             fontWeight = FontWeight.Medium,
                             color = Color.White,
+                            fontSize = 18.sp
                         )
                     }
 
@@ -135,7 +133,7 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
                                 LucideChevronLeft,
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp).clickable {
-                                    // TODO: implement calendar navigation
+                                    viewModel.swipeBack()
                                 },
                             )
                             Spacer(Modifier.width(8.dp))
@@ -143,7 +141,7 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
                                 LucideChevronRight,
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp).clickable {
-                                    // TODO: implement calendar navigation
+                                    viewModel.swipeForward()
                                 },
                             )
                         }
