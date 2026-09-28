@@ -39,7 +39,7 @@ class ProgramsViewModel : AppViewModel() {
     ) {
         var title: String = ""
             private set
-        val startDate = startDate
+        val startDate = _startDate
         val endDate = _endDate
         val weeks: ArrayList<WeekData> = _weeks
 
