@@ -39,14 +39,13 @@ class ProgramsViewModel : AppViewModel() {
     ) {
         var title: String = ""
             private set
-        val startDate: Instant
+        val startDate = startDate
         val endDate = _endDate
         val weeks: ArrayList<WeekData> = _weeks
 
 
         init {
             val tz = TimeZone.currentSystemDefault()
-            startDate = _startDate.apply { if (viewMode == ProgramsViewMode.MONTHLY) plus(24, DateTimeUnit.HOUR) }
             val weekNumber = startDate.until(endDate, DateTimeUnit.WEEK, tz) + 1
             var currentWeek = getStartDateOfWeek(startDate.toLocalDateTime(tz).date)
                 .atStartOfDayIn(tz)
