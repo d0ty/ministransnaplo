@@ -39,6 +39,16 @@ fun calculateInterval(start: Long, end: Long): String {
     return "$days days $hours hours $minutes minutes $seconds seconds"
 }
 
+fun intervalStringToMinutes(interval: String): Int {
+    val regex = """(\d+) days (\d+) hours (\d+) minutes (\d+) seconds""".toRegex()
+    val matchResult = regex.find(interval)
+    if (matchResult != null) {
+        val (days, hours, minutes, seconds) = matchResult.destructured
+        return days.toInt() * 24 * 60 + hours.toInt() * 60 + minutes.toInt() + seconds.toInt() / 60
+    }
+    return 0
+}
+
 fun getStartDateOfWeek(date: LocalDate): LocalDate {
     val dayOfWeek = date.dayOfWeek
     val daysToSubtract = if (dayOfWeek.isoDayNumber >= DayOfWeek.MONDAY.isoDayNumber) {
