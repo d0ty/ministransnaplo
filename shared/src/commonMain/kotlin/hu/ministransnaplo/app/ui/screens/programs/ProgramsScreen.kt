@@ -191,12 +191,16 @@ fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (Nav
         Spacer(modifier = Modifier.height(4.dp))
         Column(Modifier.fillMaxSize()) {
             val tz = TimeZone.currentSystemDefault()
+            val dayPadding = when (getPlatform().isMobile) {
+                true -> 1
+                false -> 4
+            }.dp
             viewData.weeks.forEachIndexed { weekIdx, week ->
                 Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxSize().weight(1f)) {
                     val startDate = week.weekStart.toLocalDateTime(TimeZone.currentSystemDefault()).date
                     week.getCategorizedPrograms().forEachIndexed { index, dailyProgram ->
                         Column(
-                            Modifier.padding(4.dp).clip(RoundedCornerShape(4.dp))
+                            Modifier.padding(dayPadding).clip(RoundedCornerShape(dayPadding))
                                 .background(color = Theme.colorScheme.background).fillMaxSize().weight(1f),
                             verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.CenterHorizontally
