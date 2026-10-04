@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +34,9 @@ actual fun WeeklyProgramsView(
     val currentWeek = viewData.weeks[0]
     val scrollState = rememberScrollState()
     Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
+        if (currentWeek.programs.isEmpty()) {
+            Text("Ezen a héten nincsen program", Modifier.align(Alignment.CenterHorizontally))
+        }
         currentWeek.getCategorizedPrograms().forEachIndexed { dayIdx, dailyPrograms ->
             val date = startDate.plus(dayIdx, DateTimeUnit.DAY)
             val dateFormatter = LocalDate.Format { byUnicodePattern("MM.dd.") }

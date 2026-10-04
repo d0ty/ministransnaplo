@@ -89,9 +89,6 @@ actual fun WeeklyProgramsView(
     }
 }
 
-actual fun getDaysOfWeek(): Array<String> =
-    arrayOf("Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap")
-
 private class SlotData(val dayIndex: Int, val startMin: Int, val endMin: Int)
 
 fun Modifier.weekSlot(dayIndex: Int, startMin: Int, endMin: Int) =

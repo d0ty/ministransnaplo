@@ -18,17 +18,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
+import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 class ProgramsViewModel : AppViewModel() {
+
     data class ViewState(
         val viewMode: ProgramsViewMode = ProgramsViewMode.MONTHLY,
-        val isLoading: Boolean = true,
-        val prevViewData: ViewData? = null,
-        val currentViewData: ViewData? = null,
-        val nextViewData: ViewData? = null
+        val anchorStart: LocalDate,
+        val views: Map<Int, ViewData> = emptyMap(),
     )
 
     class ViewData(
@@ -83,102 +84,128 @@ class ProgramsViewModel : AppViewModel() {
         }
     }
 
+    companion object {
+        private const val CHUNK = 6
+        private const val KEEP = CHUNK + 2
+    }
+
+
     val calendarState: StateFlow<ViewState>
-        field = MutableStateFlow(ViewState())
+        field = MutableStateFlow(ViewState(anchorStart = today()))
 
-    init {
-        fetchCalendar(ProgramsViewMode.MONTHLY, Clock.System.now())
+    private val requested = mutableSetOf<Int>()
+
+    @Volatile
+    private var currentOffset = 0
+
+    private val tz get() = TimeZone.currentSystemDefault()
+    private fun today() = Clock.System.todayIn(tz)
+
+    private fun periodStartOf(viewMode: ProgramsViewMode, date: LocalDate) = when (viewMode) {
+        ProgramsViewMode.MONTHLY -> LocalDate(date.year, date.month, 1)
+        ProgramsViewMode.WEEKLY -> date.minus(date.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
     }
 
-    fun changeViewMode(mode: ProgramsViewMode) {
-        fetchCalendar(mode, calendarState.value.currentViewData?.startDate ?: Clock.System.now())
+    private fun periodStart(viewMode: ProgramsViewMode, anchor: LocalDate, offset: Int) =
+        anchor.plus(offset, viewMode.dateUnit)
+
+    fun setViewMode(viewMode: ProgramsViewMode) {
+        println("setViewMode $viewMode")
+        val s = calendarState.value
+        val day = periodStart(s.viewMode, s.anchorStart, currentOffset)
+        println("new anchor input: $day")
+        println("new anchor: ${periodStartOf(viewMode, day)}")
+        reset(viewMode, periodStartOf(viewMode, day))
     }
 
-    fun swipeBack() {
-        calendarState.update {
-            it.copy(
-                prevViewData = null,
-                currentViewData = it.prevViewData,
-                nextViewData = it.currentViewData
-            )
+    private fun reset(
+        viewMode: ProgramsViewMode,
+        anchor: LocalDate
+    ) {
+        requested.clear()
+        currentOffset = 0
+        calendarState.update { it.copy(viewMode = viewMode, anchorStart = anchor, views = emptyMap()) }
+    }
+
+    fun onPageSettled(offset: Int) {
+        println("CAL offset=$offset")
+        currentOffset = offset
+        evict(offset)
+        (offset - 1..offset + 1)
+            .map { it.floorDiv(CHUNK) }
+            .distinct()
+            .forEach(::loadChunk)
+    }
+
+    private fun loadChunk(chunk: Int) {
+        if (!requested.add(chunk)) {
+            println("CAL chunk $chunk already requested"); return
         }
-        fetchCalendar(
-            calendarState.value.viewMode,
-            calendarState.value.currentViewData?.startDate ?: Clock.System.now()
-        )
-    }
 
-    fun swipeForward() {
-        calendarState.update {
-            it.copy(
-                prevViewData = it.currentViewData,
-                currentViewData = it.nextViewData,
-                nextViewData = null
-            )
-        }
-        fetchCalendar(
-            calendarState.value.viewMode,
-            calendarState.value.currentViewData?.startDate ?: Clock.System.now()
-        )
-    }
-
-    private fun fetchCalendar(viewMode: ProgramsViewMode, queryDate: Instant) {
-        calendarState.update { it.copy(viewMode = viewMode, isLoading = true) }
-        val queryDate = queryDate.toLocalDateTime(TimeZone.currentSystemDefault()).date
-        val tz = TimeZone.currentSystemDefault()
-        val currentViewStartDate = when (viewMode) {
-            ProgramsViewMode.MONTHLY -> {
-                queryDate.minus(queryDate.day - 1, DateTimeUnit.DAY)
-            }
-
-            ProgramsViewMode.WEEKLY -> {
-                val dayOfWeek = queryDate.dayOfWeek
-                val daysToSubtract = if (dayOfWeek.isoDayNumber >= DayOfWeek.MONDAY.isoDayNumber) {
-                    dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber
-                } else {
-                    dayOfWeek.isoDayNumber + 7 - DayOfWeek.MONDAY.isoDayNumber
-                }
-                queryDate.minus(daysToSubtract, DateTimeUnit.DAY)
-            }
-        }
-        val prevViewStart =
-            currentViewStartDate.minus(1, viewMode.dateUnit).atStartOfDayIn(tz)
-        val nextViewEnd = currentViewStartDate
-            .plus(2, viewMode.dateUnit).atStartOfDayIn(tz)
-        val nextViewStart =
-            currentViewStartDate.plus(1, viewMode.dateUnit).atStartOfDayIn(tz)
-        val currentViewStart = currentViewStartDate.atStartOfDayIn(TimeZone.currentSystemDefault())
+        val snapshot = calendarState.value
+        val mode = snapshot.viewMode
+        val anchor = snapshot.anchorStart
+        val from = chunk * CHUNK
 
         viewModelScope.launch(Dispatchers.Default) {
-            executeSupabaseAction {
-                val data = supabase.from("programs").select {
-                    order("start", Order.ASCENDING)
-                    filter {
-                        and {
-                            gte("start", prevViewStart)
-                            lte("start", nextViewEnd)
-                        }
+            println("Loading chunk $chunk, from=$from")
+            val result = executeSupabaseAction {
+                val loaded = fetchRange(mode, anchor, from, from + CHUNK - 1)
+                calendarState.update { s ->
+                    if (s.viewMode != mode || s.anchorStart != anchor) s
+                    else {
+                        val lo = currentOffset - KEEP
+                        val hi = currentOffset + KEEP
+                        s.copy(views = (s.views + loaded).filterKeys { it in lo..hi })
                     }
-                }.decodeAs<List<Program>>()
-                val prevView = ViewData(viewMode, prevViewStart, currentViewStart)
-                val currentView = ViewData(viewMode, currentViewStart, nextViewStart)
-                val nextView = ViewData(viewMode, nextViewStart, nextViewEnd)
-                data.forEach {
-                    if (it.startDate in prevViewStart..<currentViewStart) prevView.add(it)
-                    else if (it.startDate in currentViewStart..<nextViewStart) currentView.add(it)
-                    else nextView.add(it)
                 }
-                calendarState.update {
-                    it.copy(
-                        isLoading = false,
-                        prevViewData = prevView,
-                        currentViewData = currentView,
-                        nextViewData = nextView
-                    )
-                }
-                return@executeSupabaseAction DbResult.Success.NoContent
+                DbResult.Success.NoContent
             }
+            println("Loaded chunk $chunk, from=$from, result=$result")
+            val stillCurrent = calendarState.value.let { it.viewMode == mode && it.anchorStart == anchor }
+            if (stillCurrent && result is DbResult.Failure) requested.remove(chunk)
         }
+    }
+
+    private suspend fun fetchRange(
+        viewMode: ProgramsViewMode,
+        anchor: LocalDate,
+        fromOffset: Int,
+        toOffset: Int
+    ): Map<Int, ViewData> =
+        withContext(Dispatchers.Default) {
+            val bounds = (fromOffset..toOffset + 1)
+                .map { periodStart(viewMode, anchor, it).atStartOfDayIn(tz) }
+
+            val data = supabase.from("programs").select {
+                order("start", Order.ASCENDING)
+                filter {
+                    and {
+                        gte("start", bounds.first())
+                        lt("start", bounds.last())
+                    }
+                }
+            }.decodeAs<List<Program>>()
+
+            val views = (fromOffset..toOffset).associateWith { offset ->
+                val i = offset - fromOffset
+                ViewData(viewMode, bounds[i], bounds[i + 1])
+            }
+
+            var idx = 0
+            for (program in data) {
+                while (idx < bounds.size - 2 && program.startDate >= bounds[idx + 1]) idx++
+                views.getValue(fromOffset + idx).add(program)
+            }
+
+            views
+        }
+
+    fun evict(center: Int) {
+        val lo = center - KEEP
+        val hi = center + KEEP
+        calendarState.update { s -> s.copy(views = s.views.filterKeys { it in lo..hi }) }
+        requested.retainAll { it in lo.floorDiv(CHUNK)..hi.floorDiv(CHUNK) }
     }
 
     fun createProgram(
