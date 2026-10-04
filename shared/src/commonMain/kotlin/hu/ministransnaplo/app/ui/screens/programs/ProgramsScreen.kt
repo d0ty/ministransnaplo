@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.NavContainer
+import hu.ministransnaplo.app.getPlatform
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.components.FullScreenCard
@@ -162,13 +163,17 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
     }
 }
 
-expect fun getDaysOfWeek(): Array<String>
+fun getDaysOfWeekShort(): Array<String> =
+    arrayOf("H", "K", "Sze", "Cs", "P", "Szo", "V")
+
+fun getDaysOfWeek(): Array<String> =
+    arrayOf("Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap")
 
 @Composable
 fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (NavItem) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            getDaysOfWeek().forEach {
+            (if (getPlatform().isMobile) getDaysOfWeekShort() else getDaysOfWeek()).forEach {
                 Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.Center) {
                     Text(it)
                 }
@@ -193,7 +198,8 @@ fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (Nav
                                 fontWeight = FontWeight.Bold,
                                 color = if (weekIdx in 1..3 || (weekIdx == 4 && startDate.month == date.month) || (weekIdx == 0 && startDate.month != date.month)) Color.White else Color.Gray,
                                 modifier = if (Clock.System.todayIn(tz) == date) Modifier.padding(12.dp, 4.dp)
-                                    .clip(RoundedCornerShape(4.dp)).background(Theme.colorScheme.surface) else Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Theme.colorScheme.surface) else Modifier
                             )
                             Spacer(Modifier.height(4.dp))
                             for (program in dailyProgram) {
