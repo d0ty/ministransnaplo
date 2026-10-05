@@ -6,6 +6,7 @@
 package hu.ministransnaplo.app.ui.screens.programs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,7 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import hu.ministransnaplo.app.ui.NavItem
+import hu.ministransnaplo.app.models.Program
 import kotlinx.datetime.*
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
@@ -27,7 +28,7 @@ import kotlinx.datetime.format.byUnicodePattern
 @Composable
 actual fun WeeklyProgramsView(
     viewData: ProgramsViewModel.ViewData,
-    onNavigation: (NavItem) -> Unit
+    onProgramSelected: (Program) -> Unit
 ) {
     val tz = TimeZone.currentSystemDefault()
     val startDate = viewData.startDate.toLocalDateTime(tz).date
@@ -49,7 +50,14 @@ actual fun WeeklyProgramsView(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 dailyPrograms.forEach {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(it.color).padding(4.dp)) {
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(it.color).padding(4.dp)
+                            .clickable {
+                                onProgramSelected(it)
+                            }
+                    ) {
                         Text(it.title, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                         val startTime = it.startDate.toLocalDateTime(tz).time
                         val durationInMinutes = it.duration.hour * 60 + it.duration.minute

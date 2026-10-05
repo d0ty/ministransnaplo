@@ -6,6 +6,7 @@
 package hu.ministransnaplo.app.ui.screens.programs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +19,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ParentDataModifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import hu.ministransnaplo.app.ui.NavItem
+import hu.ministransnaplo.app.models.Program
 import hu.ministransnaplo.app.ui.Theme
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -29,7 +30,7 @@ import kotlin.math.roundToInt
 @Composable
 actual fun WeeklyProgramsView(
     viewData: ProgramsViewModel.ViewData,
-    onNavigation: (NavItem) -> Unit
+    onProgramSelected: (Program) -> Unit
 ) {
     val currentWeek = viewData.weeks[0]
     Box(Modifier.fillMaxSize()) {
@@ -68,7 +69,9 @@ actual fun WeeklyProgramsView(
                     Column(
                         Modifier.fillMaxSize().weekSlot(
                             idx, programStartMinute, programStartMinute + programDurationMinute
-                        ).background(program.color).padding(2.dp, 4.dp)
+                        ).background(program.color).padding(2.dp, 4.dp).clickable {
+                            onProgramSelected(program)
+                        }
                     ) {
                         Text(program.title, fontWeight = FontWeight.Bold)
                         val programEndTime =

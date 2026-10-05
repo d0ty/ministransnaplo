@@ -93,6 +93,9 @@ class ProgramsViewModel : AppViewModel() {
     val calendarState: StateFlow<ViewState>
         field = MutableStateFlow(ViewState(anchorStart = today()))
 
+    val currentMember: StateFlow<Program?>
+        field = MutableStateFlow(null)
+
     private val requested = mutableSetOf<Int>()
 
     @Volatile
@@ -100,6 +103,10 @@ class ProgramsViewModel : AppViewModel() {
 
     private val tz get() = TimeZone.currentSystemDefault()
     private fun today() = Clock.System.todayIn(tz)
+
+    fun selectProgram(program: Program?) {
+        currentMember.update { program }
+    }
 
     private fun periodStartOf(viewMode: ProgramsViewMode, date: LocalDate) = when (viewMode) {
         ProgramsViewMode.MONTHLY -> LocalDate(date.year, date.month, 1)

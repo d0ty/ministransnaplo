@@ -228,6 +228,25 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                             viewModel = sharedViewModel
                         )
                     }
+                    dialog<ProgramDetails>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<ProgramsRoot>()
+                        }
+                        val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
+                            ProgramsViewModel()
+                        }
+
+                        ProgramDetailDialog(
+                            close = {
+                                sharedViewModel.selectProgram(null)
+                                navController.popBackStack()
+                            },
+                            navigate = { navController.navigate(route = it) },
+                            viewModel = sharedViewModel
+                        )
+                    }
 
                 }
 

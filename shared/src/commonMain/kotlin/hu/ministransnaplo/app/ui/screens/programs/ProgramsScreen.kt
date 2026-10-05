@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hu.ministransnaplo.app.NavContainer
 import hu.ministransnaplo.app.getPlatform
+import hu.ministransnaplo.app.models.Program
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.components.FullScreenCard
@@ -112,7 +113,10 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
                     key = { it }
                 ) { idx ->
                     val data = calendarState.views[idx - START]
-                    if (data != null) ViewHandler(calendarState.viewMode, data, onNavigation) { swipe(it) }
+                    if (data != null) ViewHandler(calendarState.viewMode, data, onProgramSelected = {
+                        viewModel.selectProgram(it)
+                        onNavigation(ProgramDetails)
+                    }) { swipe(it) }
                     else Box(Modifier.fillMaxSize().clipToBounds()) {
                         CircularProgressIndicator(Modifier.align(Alignment.Center).size(36.dp))
                     }
@@ -139,7 +143,7 @@ fun getDaysOfWeek(): Array<String> =
 fun ViewHandler(
     viewMode: ProgramsViewMode,
     viewData: ProgramsViewModel.ViewData,
-    onNavigation: (NavItem) -> Unit,
+    onProgramSelected: (Program) -> Unit,
     onSwipe: (forward: Boolean) -> Unit
 ) {
     Column(Modifier.fillMaxSize().clipToBounds()) {
@@ -171,15 +175,15 @@ fun ViewHandler(
         }
         Spacer(Modifier.height(32.dp))
         when (viewMode) {
-            ProgramsViewMode.MONTHLY -> MonthlyProgramsView(viewData, onNavigation)
-            ProgramsViewMode.WEEKLY -> WeeklyProgramsView(viewData, onNavigation)
+            ProgramsViewMode.MONTHLY -> MonthlyProgramsView(viewData, onProgramSelected)
+            ProgramsViewMode.WEEKLY -> WeeklyProgramsView(viewData, onProgramSelected)
         }
     }
 }
 
 
 @Composable
-fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (NavItem) -> Unit) {
+fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onProgramSelected: (Program) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             (if (getPlatform().isMobile) getDaysOfWeekShort() else getDaysOfWeek()).forEach {
@@ -219,7 +223,7 @@ fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (Nav
                                 Row(
                                     Modifier.padding(4.dp).clip(RoundedCornerShape(4.dp)).background(program.color)
                                         .fillMaxWidth().clickable {
-                                            // TODO: navigate to event details
+                                            onProgramSelected(program)
                                         }) {
                                     Text(
                                         program.title,
@@ -238,4 +242,4 @@ fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (Nav
 }
 
 @Composable
-expect fun WeeklyProgramsView(viewData: ProgramsViewModel.ViewData, onNavigation: (NavItem) -> Unit)
+expect fun WeeklyProgramsView(viewData: ProgramsViewModel.ViewData, onProgramSelected: (Program) -> Unit)
