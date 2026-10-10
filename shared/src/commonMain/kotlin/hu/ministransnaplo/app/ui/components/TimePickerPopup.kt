@@ -8,4 +8,4 @@ package hu.ministransnaplo.app.ui.components
 import androidx.compose.runtime.Composable
 
 @Composable
-expect fun TimePickerPopup(onConfirm: (Long) -> Unit, onDismiss: () -> Unit)
+expect fun TimePickerPopup(default: Long? = null, onConfirm: (Long) -> Unit, onDismiss: () -> Unit)

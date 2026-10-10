@@ -60,8 +60,7 @@ actual fun WeeklyProgramsView(
                     ) {
                         Text(it.title, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                         val startTime = it.startDate.toLocalDateTime(tz).time
-                        val durationInMinutes = it.duration.hour * 60 + it.duration.minute
-                        val endTime = it.startDate.plus(durationInMinutes, DateTimeUnit.MINUTE).toLocalDateTime(tz).time
+                        val endTime = it.startDate.plus(it.duration).toLocalDateTime(tz).time
                         Text(
                             "${timeFormatter.format(startTime)} - ${timeFormatter.format(endTime)}",
                             fontWeight = FontWeight.Medium

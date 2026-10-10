@@ -13,10 +13,10 @@ import kotlin.time.Instant
 
 @OptIn(FormatStringsInDatetimeFormats::class)
 fun convertMillisToTimeString(millis: Long): String {
-    val formatter = DateTimeComponents.Format {
+    val formatter = LocalDateTime.Format {
         byUnicodePattern("HH:mm")
     }
-    return Instant.fromEpochMilliseconds(millis).format(formatter)
+    return Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).format(formatter)
 }
 
 @OptIn(FormatStringsInDatetimeFormats::class)

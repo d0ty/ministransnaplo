@@ -6,10 +6,10 @@
 package hu.ministransnaplo.app.models
 
 import androidx.compose.ui.graphics.Color
-import kotlinx.datetime.LocalTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlin.time.Duration
 import kotlin.time.Instant
 
 @Serializable
@@ -19,7 +19,7 @@ data class Program(
     val description: String,
     @SerialName("start")
     val startDate: Instant,
-    val duration: LocalTime,
+    val duration: Duration,
     val mandatory: Boolean,
 ) {
     @Transient

@@ -65,7 +65,7 @@ actual fun WeeklyProgramsView(
                 dailyPrograms.forEach { program ->
                     val programStartTime = program.startDate.toLocalDateTime(TimeZone.currentSystemDefault()).time
                     val programStartMinute = programStartTime.hour * 60 + programStartTime.minute
-                    val programDurationMinute = program.duration.hour * 60 + program.duration.minute
+                    val programDurationMinute = program.duration.inWholeMinutes.toInt()
                     Column(
                         Modifier.fillMaxSize().weekSlot(
                             idx, programStartMinute, programStartMinute + programDurationMinute
@@ -75,7 +75,7 @@ actual fun WeeklyProgramsView(
                     ) {
                         Text(program.title, fontWeight = FontWeight.Bold)
                         val programEndTime =
-                            program.startDate.plus(programDurationMinute, DateTimeUnit.MINUTE)
+                            program.startDate.plus(program.duration)
                                 .toLocalDateTime(TimeZone.currentSystemDefault()).time
                         if (programDurationMinute > 60) Text(
                             "${programStartTime.hour.toString().padStart(2, '0')}:${

@@ -22,8 +22,6 @@ import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -44,16 +42,12 @@ fun ProgramDetailDialog(
         }
     }, commandsEnabled = viewModel.userState.value.isGuardOwner) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
-            DataCard(Modifier.fillMaxFlexSpace(), editing, onEditFinishes = {}) {
+            DataCard(Modifier.fillMaxFlexSpace(), editing, onEditFinishes = {
+                editing = false
+            }) {
                 TextField("title", "Cím", program!!.title)
-                TextField("start", "Kezdés", program!!.startDate.toString())
-                TextField(
-                    "end", "Befejezés", program!!.startDate.plus(
-                        program!!.duration.hour * 60 + program!!.duration.minute,
-                        DateTimeUnit.MINUTE
-                    ).toString()
-                )
-                TextField("type", "Típus", "Mise", true)
+                DateRangeField("time", "Dátum", program!!.startDate, program!!.duration)
+                TextField("type", "Típus", "Program", true)
                 CheckboxField("mandatory", "Kötelező", program!!.mandatory)
             }
             FlexibleSpacer(16.dp)
@@ -61,7 +55,7 @@ fun ProgramDetailDialog(
                 Text("Jelenlét igazolása", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth().defaultMinSize(250.dp)
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(200.dp)
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,

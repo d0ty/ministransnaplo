@@ -22,6 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hu.ministransnaplo.app.ui.icons.lucide.LucideX
+import kotlinx.datetime.*
+import kotlinx.datetime.format.DateTimeComponents
+import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -29,6 +32,11 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 /**
  * Wrapper interface for Data Card Field values.
@@ -36,6 +44,7 @@ import kotlinx.serialization.json.*
  * **Supported types:**
  *  - String: [DCFieldValue.Str]
  *  - Boolean: [DCFieldValue.Bool]
+ *  - DateRange: [DCFieldValue.DateRange]
  *
  *  Other types can be implemented by adding child data classes with the type you like.
  */
@@ -52,6 +61,14 @@ sealed interface DCFieldValue {
      * @see DCFieldValue
      */
     data class Bool(val value: Boolean) : DCFieldValue
+
+    /**
+     * Data Card Field Value for a date range (start time instant and duration)
+     * @see DCFieldValue
+     */
+    data class DateRange(val start: Instant, val duration: Duration) : DCFieldValue {
+        val end = start.plus(duration)
+    }
 }
 
 /**
@@ -68,6 +85,12 @@ object DCFieldValueSerializer : KSerializer<DCFieldValue> {
         val element: JsonElement = when (value) {
             is DCFieldValue.Str -> JsonPrimitive(value.value)
             is DCFieldValue.Bool -> JsonPrimitive(value.value)
+            is DCFieldValue.DateRange -> JsonObject(
+                mapOf(
+                    "start" to JsonPrimitive(value.start.toString()),
+                    "duration" to JsonPrimitive(value.duration.toString())
+                )
+            )
         }
         encoder.encodeJsonElement(element)
     }
@@ -80,6 +103,12 @@ object DCFieldValueSerializer : KSerializer<DCFieldValue> {
         return when {
             element.isString -> DCFieldValue.Str(element.content)
             element.booleanOrNull != null -> DCFieldValue.Bool(element.boolean)
+            element.jsonObject.containsKey("start") && element.jsonObject.containsKey("duration") -> {
+                val start = Instant.parse(element.jsonObject["start"]!!.jsonPrimitive.content)
+                val duration = Duration.parse(element.jsonObject["duration"]!!.jsonPrimitive.content)
+                DCFieldValue.DateRange(start, duration)
+            }
+
             else -> DCFieldValue.Str(element.content)
         }
     }
@@ -125,6 +154,22 @@ interface DataCardScope {
         field: String,
         title: String,
         checked: Boolean,
+    )
+
+    /**
+     * Full date range input field (date and time input for start and end timestamps).
+     *
+     * @param field - id of field for managing edit state
+     * @param title - visual label of the field
+     * @param startInstant - initial state of start time
+     * @param duration - initial state of duration
+     */
+    @Composable
+    fun DateRangeField(
+        field: String,
+        title: String,
+        startInstant: Instant,
+        duration: Duration,
     )
 }
 
@@ -212,6 +257,89 @@ class DataCardScopeImpl(editing: Boolean) : DataCardScope {
                 enabled = editing
             )
             Text(title, fontWeight = FontWeight.SemiBold)
+        }
+    }
+
+    @Composable
+    override fun DateRangeField(
+        field: String,
+        title: String,
+        startInstant: Instant,
+        duration: Duration
+    ) {
+        val tz = TimeZone.currentSystemDefault()
+        val state = stateFor(field, DCFieldValue.DateRange(startInstant, duration))
+                as MutableState<DCFieldValue.DateRange>
+        var popupState by remember { mutableStateOf<DatePopup?>(null) }
+        Column(Modifier.fillMaxWidth()) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            if (editing) {
+                Column {
+                    DateTimeInput(state.value.start, DatePopupTarget.START) {
+                        popupState = it
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    DateTimeInput(state.value.end, DatePopupTarget.END) {
+                        popupState = it
+                    }
+                }
+            } else {
+                val endTime = state.value.end.toLocalDateTime(TimeZone.currentSystemDefault()).time
+                val formatter = DateTimeComponents.Format { byUnicodePattern("yyyy.MM.dd. HH:mm") }
+                Text("${state.value.start.format(formatter)} - ${endTime.hour}:${endTime.minute}")
+            }
+        }
+        if (popupState != null) {
+            val default = when (popupState!!) {
+                is DatePopup.Date -> (if (popupState!!.target == DatePopupTarget.START) state.value.start else state.value.end).toEpochMilliseconds()
+                is DatePopup.Time -> {
+                    val time = when (popupState!!.target) {
+                        DatePopupTarget.START -> state.value.start
+                        DatePopupTarget.END -> state.value.end
+                    }.toLocalDateTime(tz).time
+                    println("time: $time")
+                    (time.hour * 60 + time.minute).toLong()
+                }
+            }
+            DatePickerPopup(popupData = popupState!!, default) { result ->
+                if (result != null) when (popupState!!.target) {
+                    DatePopupTarget.START -> when (popupState!!) {
+                        is DatePopup.Date -> state.value =
+                            state.value.copy(start = Instant.fromEpochMilliseconds(result))
+
+                        is DatePopup.Time -> {
+                            val date = state.value.start.toLocalDateTime(tz).date
+                            state.value = state.value.copy(
+                                start = date.atStartOfDayIn(tz)
+                                    .plus(result, DateTimeUnit.MILLISECOND)
+                            )
+                        }
+                    }
+
+                    DatePopupTarget.END -> {
+                        val instant = Instant.fromEpochMilliseconds(result)
+                        state.value = state.value.copy(
+                            duration = when (popupState!!) {
+                                is DatePopup.Date -> {
+                                    val dateDiff = state.value.start.toLocalDateTime(tz).date.atStartOfDayIn(tz)
+                                        .daysUntil(instant, tz)
+                                    val endTime = state.value.end.toLocalDateTime(tz).time
+                                    val startTime = state.value.start.toLocalDateTime(tz).time
+                                    dateDiff.days + (endTime.hour - startTime.hour).hours + (endTime.minute - startTime.minute).minutes
+                                }
+
+                                is DatePopup.Time -> {
+                                    val endTime = instant.toLocalDateTime(tz).time
+                                    val startTime = state.value.start.toLocalDateTime(tz).time
+                                    (endTime.hour - startTime.hour).hours + (endTime.minute - startTime.minute).minutes
+                                }
+                            }
+                        )
+                    }
+
+                }
+                popupState = null
+            }
         }
     }
 

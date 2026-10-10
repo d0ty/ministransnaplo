@@ -13,8 +13,10 @@ import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-actual fun TimePickerPopup(onConfirm: (Long) -> Unit, onDismiss: () -> Unit) {
+actual fun TimePickerPopup(default: Long?, onConfirm: (Long) -> Unit, onDismiss: () -> Unit) {
     val timePickerState = rememberTimePickerState(
+        (default?.let { it / 60 } ?: 0).toInt(),
+        (default?.let { it % 60 } ?: 0).toInt(),
         is24Hour = true
     )
 

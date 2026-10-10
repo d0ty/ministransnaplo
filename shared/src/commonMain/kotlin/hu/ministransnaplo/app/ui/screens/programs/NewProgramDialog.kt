@@ -5,45 +5,31 @@
 
 package hu.ministransnaplo.app.ui.screens.programs
 
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import hu.ministransnaplo.app.ui.NavItem
-import hu.ministransnaplo.app.ui.components.DialogContainer
-import hu.ministransnaplo.app.ui.components.SubmitButton
-import hu.ministransnaplo.app.ui.components.TimePickerPopup
+import hu.ministransnaplo.app.ui.components.*
 import hu.ministransnaplo.app.ui.icons.lucide.LucideClock4
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
 import hu.ministransnaplo.app.ui.icons.lucide.LucideUsers
 import hu.ministransnaplo.app.util.DbResult
-import hu.ministransnaplo.app.util.convertMillisToDateString
-import hu.ministransnaplo.app.util.convertMillisToTimeString
 import kotlinx.coroutines.launch
+import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 @Serializable
 object NewProgram : NavItem
 
-sealed interface DatePopup {
-    val target: DatePopupTarget
-
-    data class Date(override val target: DatePopupTarget) : DatePopup
-    data class Time(override val target: DatePopupTarget) : DatePopup
-}
-
-enum class DatePopupTarget {
-    START, END
-}
 
 @Composable
 fun DialogRow(vector: ImageVector, content: @Composable RowScope.() -> Unit) {
@@ -63,10 +49,12 @@ fun NewProgramDialog(
 ) {
     val scope = rememberCoroutineScope()
     var datePopup by remember { mutableStateOf<DatePopup?>(null) }
-    var startDate by remember { mutableStateOf<Long?>(null) }
-    var startTime by remember { mutableStateOf<Long?>(null) }
-    var endDate by remember { mutableStateOf<Long?>(null) }
-    var endTime by remember { mutableStateOf<Long?>(null) }
+    val currentDate = Clock.System.now().let {
+        val date = it.toLocalDateTime(TimeZone.currentSystemDefault())
+        LocalDateTime(date.year, date.month, date.day, date.hour, 0, 0, 0)
+    }.toInstant(TimeZone.currentSystemDefault())
+    var startDate by remember { mutableStateOf(currentDate) }
+    var endDate by remember { mutableStateOf(currentDate + 1.hours) }
     Box {
         Column {
             DialogContainer("Új program létrehozása", 350.dp, close, navigate) {
@@ -98,69 +86,17 @@ fun NewProgramDialog(
                     Spacer(Modifier.height(8.dp))
                     DialogRow(LucideClock4) {
                         Column {
-                            Row {
-                                TextField(
-                                    value = startDate?.let { convertMillisToDateString(it) } ?: "",
-                                    onValueChange = { },
-                                    placeholder = { Text("YYYY. MM. DD") },
-                                    modifier = Modifier.sizeIn(maxWidth = 192.dp).pointerInput(startDate) {
-                                        awaitEachGesture {
-                                            awaitFirstDown(pass = PointerEventPass.Initial)
-                                            val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                                            if (upEvent != null) {
-                                                datePopup = DatePopup.Date(DatePopupTarget.START)
-                                            }
-                                        }
-                                    }
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                TextField(
-                                    value = startTime?.let { convertMillisToTimeString(it) } ?: "",
-                                    onValueChange = { },
-                                    placeholder = { Text("HH:mm") },
-                                    modifier = Modifier.sizeIn(minWidth = 200.dp).pointerInput(startTime) {
-                                        awaitEachGesture {
-                                            awaitFirstDown(pass = PointerEventPass.Initial)
-                                            val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                                            if (upEvent != null) {
-                                                datePopup = DatePopup.Time(DatePopupTarget.START)
-                                            }
-                                        }
-                                    }
-                                )
-                            }
+                            DateTimeInput(
+                                value = startDate,
+                                target = DatePopupTarget.START,
+                                onPickStart = { datePopup = it }
+                            )
                             Spacer(Modifier.height(4.dp))
-                            Row {
-                                TextField(
-                                    value = endDate?.let { convertMillisToDateString(it) } ?: "",
-                                    onValueChange = { },
-                                    placeholder = { Text("YYYY. MM. DD") },
-                                    modifier = Modifier.sizeIn(maxWidth = 192.dp).pointerInput(endDate) {
-                                        awaitEachGesture {
-                                            awaitFirstDown(pass = PointerEventPass.Initial)
-                                            val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                                            if (upEvent != null) {
-                                                datePopup = DatePopup.Date(DatePopupTarget.END)
-                                            }
-                                        }
-                                    }
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                TextField(
-                                    value = endTime?.let { convertMillisToTimeString(it) } ?: "",
-                                    onValueChange = { },
-                                    placeholder = { Text("HH:mm") },
-                                    modifier = Modifier.fillMaxWidth().pointerInput(endTime) {
-                                        awaitEachGesture {
-                                            awaitFirstDown(pass = PointerEventPass.Initial)
-                                            val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                                            if (upEvent != null) {
-                                                datePopup = DatePopup.Time(DatePopupTarget.END)
-                                            }
-                                        }
-                                    }
-                                )
-                            }
+                            DateTimeInput(
+                                value = endDate,
+                                target = DatePopupTarget.END,
+                                onPickStart = { datePopup = it }
+                            )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -182,20 +118,7 @@ fun NewProgramDialog(
                                 }
                                 return@SubmitButton
                             }
-                            if (startDate == null && startTime == null) {
-                                scope.launch {
-                                    showSnackbar("A kezdés dátuma nem lehet üres!")
-                                }
-                                return@SubmitButton
-                            }
-                            if (endDate == null && endTime == null) {
-                                scope.launch {
-                                    showSnackbar("A vége dátuma nem lehet üres!")
-                                }
-                                return@SubmitButton
-                            }
-
-                            if (startDate!! < endDate!!) {
+                            if (startDate > endDate) {
                                 scope.launch {
                                     showSnackbar("A program nem fejeződhet be hamarabb mint ahogy elkezdődne!")
                                 }
@@ -205,8 +128,8 @@ fun NewProgramDialog(
                             viewModel.createProgram(
                                 programTitle,
                                 description,
-                                startDate!! + startTime!!,
-                                endDate!! + endTime!!,
+                                startDate.toEpochMilliseconds(),
+                                endDate.toEpochMilliseconds(),
                                 mandatory
                             ) { result ->
                                 scope.launch {
@@ -226,69 +149,61 @@ fun NewProgramDialog(
                 }
             }
         }
-        when (datePopup) {
-            is DatePopup.Date -> {
-                val datePickerState = rememberDatePickerState()
-
-                @OptIn(ExperimentalMaterial3Api::class)
-                DatePickerDialog(
-                    onDismissRequest = { datePopup = null },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                when (datePopup!!.target) {
-                                    DatePopupTarget.START -> {
-                                        startDate = datePickerState.selectedDateMillis
-                                        if (endDate == null) endDate = datePickerState.selectedDateMillis
-                                    }
-
-                                    DatePopupTarget.END -> {
-                                        endDate = datePickerState.selectedDateMillis
-                                    }
-                                }
-                                datePopup = null
-                            }
-                        ) {
-                            Text("OK", color = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
-                            onClick = { datePopup = null }
-                        ) {
-                            Text("Mégse", color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                ) {
-                    DatePicker(datePickerState, modifier = Modifier.sizeIn(maxWidth = 300.dp, maxHeight = 400.dp))
+        if (datePopup != null) {
+            val default = when (datePopup!!) {
+                is DatePopup.Date -> (if (datePopup!!.target == DatePopupTarget.START) startDate else endDate).toEpochMilliseconds()
+                is DatePopup.Time -> {
+                    val time = when (datePopup!!.target) {
+                        DatePopupTarget.START -> startDate
+                        DatePopupTarget.END -> endDate
+                    }.toLocalDateTime(TimeZone.currentSystemDefault()).time
+                    (time.hour * 60 + time.minute).toLong()
                 }
             }
 
-            is DatePopup.Time -> {
-                Surface(
-                    Modifier.align(Alignment.Center),
-                    RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Column(Modifier.padding(10.dp)) {
-                        TimePickerPopup(onConfirm = {
-                            when (datePopup!!.target) {
-                                DatePopupTarget.START -> {
-                                    startTime = it
-                                    if (endTime == null) endTime = it + 3600 * 1000
-                                }
-
-                                DatePopupTarget.END -> {
-                                    endTime = it
-                                }
+            DatePickerPopup(
+                datePopup!!,
+                default,
+            ) {
+                println(it)
+                when (datePopup!!) {
+                    is DatePopup.Date -> {
+                        if (it != null) when (datePopup!!.target) {
+                            DatePopupTarget.START -> {
+                                val startTime = startDate.toLocalDateTime(TimeZone.UTC).time
+                                startDate =
+                                    Instant.fromEpochMilliseconds(it) + startTime.hour.hours + startTime.minute.minutes
+                                println("${Instant.fromEpochMilliseconds(it)} ${startTime.hour} ${startTime.minute}")
                             }
-                            datePopup = null
-                        }, onDismiss = { datePopup = null })
+
+                            DatePopupTarget.END -> {
+                                val endTime =
+                                    (endDate).toLocalDateTime(TimeZone.UTC).time
+                                endDate =
+                                    Instant.fromEpochMilliseconds(it) + endTime.hour.hours + endTime.minute.minutes
+                                println("${Instant.fromEpochMilliseconds(it)} ${endTime.hour} ${endTime.minute}")
+                            }
+                        }
+                    }
+
+                    is DatePopup.Time -> {
+                        if (it != null) when (datePopup!!.target) {
+                            DatePopupTarget.START -> {
+                                val startLocalDate =
+                                    (startDate).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                startDate =
+                                    startLocalDate.atStartOfDayIn(TimeZone.currentSystemDefault()) + it.milliseconds
+                            }
+
+                            DatePopupTarget.END -> {
+                                val endLocalDate = (endDate).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                endDate = endLocalDate.atStartOfDayIn(TimeZone.currentSystemDefault()) + it.milliseconds
+                            }
+                        }
                     }
                 }
+                datePopup = null
             }
-
-            else -> {}
         }
     }
 }
