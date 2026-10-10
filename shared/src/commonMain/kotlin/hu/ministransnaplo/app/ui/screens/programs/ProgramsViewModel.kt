@@ -102,6 +102,9 @@ class ProgramsViewModel : AppViewModel() {
     @Volatile
     private var currentOffset = 0
 
+    @Volatile
+    private var epoch = 0
+
     private val tz get() = TimeZone.currentSystemDefault()
     private fun today() = Clock.System.todayIn(tz)
 
@@ -117,12 +120,11 @@ class ProgramsViewModel : AppViewModel() {
     private fun periodStart(viewMode: ProgramsViewMode, anchor: LocalDate, offset: Int) =
         anchor.plus(offset, viewMode.dateUnit)
 
+    private fun chunkOf(offset: Int) = (offset + CHUNK / 2).floorDiv(CHUNK)
+
     fun setViewMode(viewMode: ProgramsViewMode) {
-        println("setViewMode $viewMode")
         val s = calendarState.value
         val day = periodStart(s.viewMode, s.anchorStart, currentOffset)
-        println("new anchor input: $day")
-        println("new anchor: ${periodStartOf(viewMode, day)}")
         reset(viewMode, periodStartOf(viewMode, day))
     }
 
@@ -130,13 +132,21 @@ class ProgramsViewModel : AppViewModel() {
         viewMode: ProgramsViewMode,
         anchor: LocalDate
     ) {
+        epoch++
         requested.clear()
         currentOffset = 0
         calendarState.update { it.copy(viewMode = viewMode, anchorStart = anchor, views = emptyMap()) }
     }
 
+    private fun reload() {
+        epoch++
+        requested.clear()
+        val window = (currentOffset - 1..currentOffset + 1).map(::chunkOf)
+        calendarState.update { s -> s.copy(views = s.views.filterKeys { chunkOf(it) in window }) }
+        onPageSettled(currentOffset)
+    }
+
     fun onPageSettled(offset: Int) {
-        println("CAL offset=$offset")
         currentOffset = offset
         evict(offset)
         (offset - 1..offset + 1)
@@ -146,12 +156,11 @@ class ProgramsViewModel : AppViewModel() {
     }
 
     private fun loadChunk(chunk: Int) {
-        if (!requested.add(chunk)) {
-            println("CAL chunk $chunk already requested"); return
-        }
+        if (!requested.add(chunk)) return
 
         val snapshot = calendarState.value
         val mode = snapshot.viewMode
+        val myEpoch = epoch
         val anchor = snapshot.anchorStart
         val from = chunk * CHUNK
 
@@ -160,7 +169,7 @@ class ProgramsViewModel : AppViewModel() {
             val result = executeSupabaseAction {
                 val loaded = fetchRange(mode, anchor, from, from + CHUNK - 1)
                 calendarState.update { s ->
-                    if (s.viewMode != mode || s.anchorStart != anchor) s
+                    if (s.viewMode != mode || s.anchorStart != anchor || epoch != myEpoch) s
                     else {
                         val lo = currentOffset - KEEP
                         val hi = currentOffset + KEEP
@@ -239,6 +248,7 @@ class ProgramsViewModel : AppViewModel() {
                 )
                 return@executeSupabaseAction DbResult.Success.NoContent
             }.also(onResult)
+            reload()
         }
     }
 
@@ -254,6 +264,7 @@ class ProgramsViewModel : AppViewModel() {
                 }.decodeSingle<Program>()
                 return@executeSupabaseAction DbResult.Success.NoContent
             }.also(onResult)
+            reload()
         }
     }
 
@@ -270,6 +281,7 @@ class ProgramsViewModel : AppViewModel() {
                 currentProgram.update { null }
                 result
             }
+            reload()
             onResult(result)
         }
     }
