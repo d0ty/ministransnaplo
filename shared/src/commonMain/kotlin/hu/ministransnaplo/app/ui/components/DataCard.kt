@@ -91,7 +91,7 @@ object DCFieldValueSerializer : KSerializer<DCFieldValue> {
         val element: JsonElement = when (value) {
             is DCFieldValue.Str -> JsonPrimitive(value.value)
             is DCFieldValue.Bool -> JsonPrimitive(value.value)
-            is DCFieldValue.Date -> JsonPrimitive(value.value.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString())
+            is DCFieldValue.Date -> JsonPrimitive(value.value.toString())
             is DCFieldValue.Duration -> JsonPrimitive(value.value.toIsoString())
         }
         encoder.encodeJsonElement(element)
