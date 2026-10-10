@@ -16,7 +16,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class DestructivePromptRequests {
     DELETE_MEMBER,
-    RESET_MEMBER_MFA
+    RESET_MEMBER_MFA,
+    DELETE_PROGRAM,
 }
 
 @Serializable

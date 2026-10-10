@@ -25,6 +25,12 @@ sealed interface PromptResult {
     @Serializable
     data class Email(val request: EmailPromptRequests, val email: String) : PromptResult
 
+    /**
+     * Wrapper of [DestructiveActionPrompt] results.
+     *
+     * @param request The request that was made to the user, for receiver side identification.
+     * @param confirmed The confirmation status of the destructive action.
+     */
     @Serializable
     data class DestructiveAction(val request: DestructivePromptRequests, val confirmed: Boolean) : PromptResult
 }

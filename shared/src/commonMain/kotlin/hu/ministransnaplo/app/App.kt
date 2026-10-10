@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import androidx.navigation.toRoute
 import hu.ministransnaplo.app.models.Member
+import hu.ministransnaplo.app.models.Program
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.prompts.*
 import hu.ministransnaplo.app.ui.screens.LoggedIn
@@ -178,6 +179,8 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                                                         }
                                                     }
                                                 }
+
+                                                else -> {}
                                             }
                                         }
                                     }
@@ -237,6 +240,29 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
                             ProgramsViewModel()
                         }
+
+                        val entry = navController.currentBackStackEntry
+                        LaunchedEffect(entry, sharedViewModel) {
+                            entry?.savedStateHandle?.getStateFlow<PromptResult?>("result", null)
+                                ?.collect { result ->
+                                    println("prompt result: $result")
+                                    if (result == null || result !is PromptResult.DestructiveAction) return@collect;
+                                    if (result.request != DestructivePromptRequests.DELETE_PROGRAM && !result.confirmed) return@collect;
+                                    println("${sharedViewModel.currentProgram.value}")
+                                    sharedViewModel.deleteMember {
+                                        println(it)
+                                        when (it) {
+                                            is DbResult.Success.WithContent<*> -> {
+                                                val program = it.result as Program
+                                                snackbarHostState.showSnackbar("${program.title} sikeresen törölve")
+                                            }
+
+                                            else -> snackbarHostState.showSnackbar("Hiba a program törlése közben!")
+                                        }
+                                    }
+                                }
+                        }
+
 
                         ProgramDetailDialog(
                             close = {

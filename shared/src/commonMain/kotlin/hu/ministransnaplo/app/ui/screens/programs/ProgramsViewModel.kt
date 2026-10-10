@@ -257,4 +257,20 @@ class ProgramsViewModel : AppViewModel() {
         }
     }
 
+    fun deleteMember(onResult: suspend (DbResult) -> Unit) {
+        if (currentProgram.value == null) throw IllegalStateException("Can't delete program without a current program selected")
+        viewModelScope.launch(Dispatchers.Default) {
+            val result = executeSupabaseAction {
+                supabase.from("programs").delete {
+                    filter {
+                        eq("id", currentProgram.value!!.id)
+                    }
+                }
+                val result = DbResult.Success.WithContent(currentProgram.value!!)
+                currentProgram.update { null }
+                result
+            }
+            onResult(result)
+        }
+    }
 }

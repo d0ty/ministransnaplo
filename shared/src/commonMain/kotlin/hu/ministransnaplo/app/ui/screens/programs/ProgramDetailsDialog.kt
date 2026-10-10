@@ -21,7 +21,10 @@ import hu.ministransnaplo.app.ui.components.DataCard
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
+import hu.ministransnaplo.app.ui.icons.lucide.LucideOctagonX
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
+import hu.ministransnaplo.app.ui.prompts.DestructiveActionPrompt
+import hu.ministransnaplo.app.ui.prompts.DestructivePromptRequests
 import hu.ministransnaplo.app.util.DbResult
 import kotlinx.serialization.Serializable
 
@@ -35,11 +38,24 @@ fun ProgramDetailDialog(
     viewModel: ProgramsViewModel
 ) {
     val program by viewModel.currentProgram.collectAsState()
+    if (program == null) {
+        close()
+        return
+    }
     var editing by remember { mutableStateOf(false) }
 
     DialogContainer("${program!!.title} adatai", 500.dp, close, navigate, commands = {
         command(LucideSquarePen, "Adatok szerkesztése") {
             editing = true
+        }
+        command(LucideOctagonX, "Program törlése") {
+            navigate(
+                DestructiveActionPrompt(
+                    DestructivePromptRequests.DELETE_PROGRAM,
+                    "Program törlése",
+                    "Biztosan törölni szeretnéd a programot?"
+                )
+            )
         }
     }, commandsEnabled = viewModel.userState.value.isGuardOwner) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
