@@ -37,6 +37,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
+import kotlin.time.Duration as KDuration
 
 /**
  * Wrapper interface for Data Card Field values.
@@ -44,7 +45,8 @@ import kotlin.time.Instant
  * **Supported types:**
  *  - String: [DCFieldValue.Str]
  *  - Boolean: [DCFieldValue.Bool]
- *  - DateRange: [DCFieldValue.DateRange]
+ *  - Date (Instant): [DCFieldValue.Date]
+ *  - Duration: [DCFieldValue.Duration]
  *
  *  Other types can be implemented by adding child data classes with the type you like.
  */
@@ -63,12 +65,16 @@ sealed interface DCFieldValue {
     data class Bool(val value: Boolean) : DCFieldValue
 
     /**
-     * Data Card Field Value for a date range (start time instant and duration)
+     * Data Card Field Value for a date represented by an [Instant]
      * @see DCFieldValue
      */
-    data class DateRange(val start: Instant, val duration: Duration) : DCFieldValue {
-        val end = start.plus(duration)
-    }
+    data class Date(val value: Instant) : DCFieldValue
+
+    /**
+     * Data Card Field Value for a duration.
+     * @see DCFieldValue
+     */
+    data class Duration(val value: KDuration) : DCFieldValue
 }
 
 /**
@@ -85,12 +91,8 @@ object DCFieldValueSerializer : KSerializer<DCFieldValue> {
         val element: JsonElement = when (value) {
             is DCFieldValue.Str -> JsonPrimitive(value.value)
             is DCFieldValue.Bool -> JsonPrimitive(value.value)
-            is DCFieldValue.DateRange -> JsonObject(
-                mapOf(
-                    "start" to JsonPrimitive(value.start.toString()),
-                    "duration" to JsonPrimitive(value.duration.toString())
-                )
-            )
+            is DCFieldValue.Date -> JsonPrimitive(value.value.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString())
+            is DCFieldValue.Duration -> JsonPrimitive(value.value.toIsoString())
         }
         encoder.encodeJsonElement(element)
     }
@@ -103,11 +105,15 @@ object DCFieldValueSerializer : KSerializer<DCFieldValue> {
         return when {
             element.isString -> DCFieldValue.Str(element.content)
             element.booleanOrNull != null -> DCFieldValue.Bool(element.boolean)
-            element.jsonObject.containsKey("start") && element.jsonObject.containsKey("duration") -> {
-                val start = Instant.parse(element.jsonObject["start"]!!.jsonPrimitive.content)
-                val duration = Duration.parse(element.jsonObject["duration"]!!.jsonPrimitive.content)
-                DCFieldValue.DateRange(start, duration)
-            }
+            Instant.parseOrNull(element.content) != null -> DCFieldValue.Date(
+                Instant.parse(element.content)
+            )
+
+            KDuration.parseIsoStringOrNull(element.content) != null -> DCFieldValue.Duration(
+                KDuration.parseIsoString(
+                    element.content
+                )
+            )
 
             else -> DCFieldValue.Str(element.content)
         }
@@ -159,14 +165,16 @@ interface DataCardScope {
     /**
      * Full date range input field (date and time input for start and end timestamps).
      *
-     * @param field - id of field for managing edit state
+     * @param startDateField - id of start date field for managing edit state
+     * @param durationField - id of duration field for managing edit state
      * @param title - visual label of the field
      * @param startInstant - initial state of start time
      * @param duration - initial state of duration
      */
     @Composable
     fun DateRangeField(
-        field: String,
+        startDateField: String,
+        durationField: String,
         title: String,
         startInstant: Instant,
         duration: Duration,
@@ -262,40 +270,48 @@ class DataCardScopeImpl(editing: Boolean) : DataCardScope {
 
     @Composable
     override fun DateRangeField(
-        field: String,
+        startDateField: String,
+        durationField: String,
         title: String,
         startInstant: Instant,
         duration: Duration
     ) {
         val tz = TimeZone.currentSystemDefault()
-        val state = stateFor(field, DCFieldValue.DateRange(startInstant, duration))
-                as MutableState<DCFieldValue.DateRange>
+        val startDateState = stateFor(startDateField, DCFieldValue.Date(startInstant))
+                as MutableState<DCFieldValue.Date>
+        val durationState = stateFor(durationField, DCFieldValue.Duration(duration))
+                as MutableState<DCFieldValue.Duration>
+        val endDate by remember(startDateState.value, durationState.value) {
+            derivedStateOf {
+                startDateState.value.value.plus(durationState.value.value)
+            }
+        }
         var popupState by remember { mutableStateOf<DatePopup?>(null) }
         Column(Modifier.fillMaxWidth()) {
             Text(title, fontWeight = FontWeight.SemiBold)
             if (editing) {
                 Column {
-                    DateTimeInput(state.value.start, DatePopupTarget.START) {
+                    DateTimeInput(startDateState.value.value, DatePopupTarget.START) {
                         popupState = it
                     }
                     Spacer(Modifier.height(4.dp))
-                    DateTimeInput(state.value.end, DatePopupTarget.END) {
+                    DateTimeInput(endDate, DatePopupTarget.END) {
                         popupState = it
                     }
                 }
             } else {
-                val endTime = state.value.end.toLocalDateTime(TimeZone.currentSystemDefault()).time
+                val endTime = endDate.toLocalDateTime(TimeZone.currentSystemDefault()).time
                 val formatter = DateTimeComponents.Format { byUnicodePattern("yyyy.MM.dd. HH:mm") }
-                Text("${state.value.start.format(formatter)} - ${endTime.hour}:${endTime.minute}")
+                Text("${startDateState.value.value.format(formatter)} - ${endTime.hour}:${endTime.minute}")
             }
         }
         if (popupState != null) {
             val default = when (popupState!!) {
-                is DatePopup.Date -> (if (popupState!!.target == DatePopupTarget.START) state.value.start else state.value.end).toEpochMilliseconds()
+                is DatePopup.Date -> (if (popupState!!.target == DatePopupTarget.START) startDateState.value.value else endDate).toEpochMilliseconds()
                 is DatePopup.Time -> {
                     val time = when (popupState!!.target) {
-                        DatePopupTarget.START -> state.value.start
-                        DatePopupTarget.END -> state.value.end
+                        DatePopupTarget.START -> startDateState.value.value
+                        DatePopupTarget.END -> endDate
                     }.toLocalDateTime(tz).time
                     println("time: $time")
                     (time.hour * 60 + time.minute).toLong()
@@ -304,13 +320,13 @@ class DataCardScopeImpl(editing: Boolean) : DataCardScope {
             DatePickerPopup(popupData = popupState!!, default) { result ->
                 if (result != null) when (popupState!!.target) {
                     DatePopupTarget.START -> when (popupState!!) {
-                        is DatePopup.Date -> state.value =
-                            state.value.copy(start = Instant.fromEpochMilliseconds(result))
+                        is DatePopup.Date -> startDateState.value =
+                            startDateState.value.copy(value = Instant.fromEpochMilliseconds(result))
 
                         is DatePopup.Time -> {
-                            val date = state.value.start.toLocalDateTime(tz).date
-                            state.value = state.value.copy(
-                                start = date.atStartOfDayIn(tz)
+                            val date = startDateState.value.value.toLocalDateTime(tz).date
+                            startDateState.value = startDateState.value.copy(
+                                value = date.atStartOfDayIn(tz)
                                     .plus(result, DateTimeUnit.MILLISECOND)
                             )
                         }
@@ -318,19 +334,20 @@ class DataCardScopeImpl(editing: Boolean) : DataCardScope {
 
                     DatePopupTarget.END -> {
                         val instant = Instant.fromEpochMilliseconds(result)
-                        state.value = state.value.copy(
-                            duration = when (popupState!!) {
+                        durationState.value = durationState.value.copy(
+                            value = when (popupState!!) {
                                 is DatePopup.Date -> {
-                                    val dateDiff = state.value.start.toLocalDateTime(tz).date.atStartOfDayIn(tz)
-                                        .daysUntil(instant, tz)
-                                    val endTime = state.value.end.toLocalDateTime(tz).time
-                                    val startTime = state.value.start.toLocalDateTime(tz).time
+                                    val dateDiff =
+                                        startDateState.value.value.toLocalDateTime(tz).date.atStartOfDayIn(tz)
+                                            .daysUntil(instant, tz)
+                                    val endTime = endDate.toLocalDateTime(tz).time
+                                    val startTime = startDateState.value.value.toLocalDateTime(tz).time
                                     dateDiff.days + (endTime.hour - startTime.hour).hours + (endTime.minute - startTime.minute).minutes
                                 }
 
                                 is DatePopup.Time -> {
                                     val endTime = instant.toLocalDateTime(tz).time
-                                    val startTime = state.value.start.toLocalDateTime(tz).time
+                                    val startTime = startDateState.value.value.toLocalDateTime(tz).time
                                     (endTime.hour - startTime.hour).hours + (endTime.minute - startTime.minute).minutes
                                 }
                             }

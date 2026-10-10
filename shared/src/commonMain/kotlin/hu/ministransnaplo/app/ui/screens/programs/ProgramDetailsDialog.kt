@@ -22,6 +22,7 @@ import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
 import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
+import hu.ministransnaplo.app.util.DbResult
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -33,7 +34,7 @@ fun ProgramDetailDialog(
     navigate: (NavItem) -> Unit,
     viewModel: ProgramsViewModel
 ) {
-    val program by viewModel.currentMember.collectAsState()
+    val program by viewModel.currentProgram.collectAsState()
     var editing by remember { mutableStateOf(false) }
 
     DialogContainer("${program!!.title} adatai", 500.dp, close, navigate, commands = {
@@ -42,16 +43,26 @@ fun ProgramDetailDialog(
         }
     }, commandsEnabled = viewModel.userState.value.isGuardOwner) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
-            DataCard(Modifier.fillMaxFlexSpace(), editing, onEditFinishes = {
-                editing = false
+            DataCard(Modifier.fillMaxFlexSpace(), editing, onEditFinishes = { result ->
+                if (result == null) {
+                    editing = false
+                    return@DataCard
+                }
+                viewModel.updateProgram(result) {
+                    editing = when (it) {
+                        is DbResult.Success -> false
+                        is DbResult.Failure -> true
+                    }
+                }
             }) {
                 TextField("title", "Cím", program!!.title)
-                DateRangeField("time", "Dátum", program!!.startDate, program!!.duration)
+                DateRangeField("start", "duration", "Dátum", program!!.startDate, program!!.duration)
                 TextField("type", "Típus", "Program", true)
                 CheckboxField("mandatory", "Kötelező", program!!.mandatory)
+                TextField("description", "Leírás", program!!.description)
             }
             FlexibleSpacer(16.dp)
-            CardColumn(Modifier.fillMaxFlexSpace(), horizontalAlignment = Alignment.Start) {
+            if (!editing) CardColumn(Modifier.fillMaxFlexSpace(), horizontalAlignment = Alignment.Start) {
                 Text("Jelenlét igazolása", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,

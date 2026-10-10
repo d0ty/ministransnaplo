@@ -10,6 +10,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Program
+import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.*
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -93,7 +94,7 @@ class ProgramsViewModel : AppViewModel() {
     val calendarState: StateFlow<ViewState>
         field = MutableStateFlow(ViewState(anchorStart = today()))
 
-    val currentMember: StateFlow<Program?>
+    val currentProgram: StateFlow<Program?>
         field = MutableStateFlow(null)
 
     private val requested = mutableSetOf<Int>()
@@ -105,7 +106,7 @@ class ProgramsViewModel : AppViewModel() {
     private fun today() = Clock.System.todayIn(tz)
 
     fun selectProgram(program: Program?) {
-        currentMember.update { program }
+        currentProgram.update { program }
     }
 
     private fun periodStartOf(viewMode: ProgramsViewMode, date: LocalDate) = when (viewMode) {
@@ -240,4 +241,20 @@ class ProgramsViewModel : AppViewModel() {
             }.also(onResult)
         }
     }
+
+    fun updateProgram(data: Map<String, DCFieldValue>, onResult: (DbResult) -> Unit) {
+        if (currentProgram.value == null) throw IllegalStateException("Can't update no program")
+        viewModelScope.launch(Dispatchers.Default) {
+            executeSupabaseAction {
+                supabase.from("programs").update(data) {
+                    select()
+                    filter {
+                        eq("id", currentProgram.value!!.id)
+                    }
+                }.decodeSingle<Program>()
+                return@executeSupabaseAction DbResult.Success.NoContent
+            }.also(onResult)
+        }
+    }
+
 }
