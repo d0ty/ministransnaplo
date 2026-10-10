@@ -92,7 +92,7 @@ class ProgramsViewModel : AppViewModel() {
 
 
     val calendarState: StateFlow<ViewState>
-        field = MutableStateFlow(ViewState(anchorStart = today()))
+        field = MutableStateFlow(ViewState(anchorStart = periodStartOf(ProgramsViewMode.MONTHLY, today())))
 
     val currentProgram: StateFlow<Program?>
         field = MutableStateFlow(null)
@@ -132,6 +132,7 @@ class ProgramsViewModel : AppViewModel() {
         viewMode: ProgramsViewMode,
         anchor: LocalDate
     ) {
+        println("CAL anchor=$anchor mode=$viewMode")
         epoch++
         requested.clear()
         currentOffset = 0
@@ -193,7 +194,7 @@ class ProgramsViewModel : AppViewModel() {
         withContext(Dispatchers.Default) {
             val bounds = (fromOffset..toOffset + 1)
                 .map { periodStart(viewMode, anchor, it).atStartOfDayIn(tz) }
-
+            println("CAL bounds=" + bounds.map { it.toLocalDateTime(tz).date })
             val data = supabase.from("programs").select {
                 order("start", Order.ASCENDING)
                 filter {

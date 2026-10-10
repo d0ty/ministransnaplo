@@ -182,8 +182,27 @@ fun ViewHandler(
 }
 
 
+/** Monday-first grid covering the whole month, built with calendar-day arithmetic (DST-safe). */
+fun monthGrid(firstOfMonth: LocalDate): List<LocalDate> {
+    val gridStart = firstOfMonth.minus(firstOfMonth.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
+    val lastOfMonth = firstOfMonth.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
+    val gridEnd = lastOfMonth.plus(7 - lastOfMonth.dayOfWeek.isoDayNumber, DateTimeUnit.DAY)
+    return List(gridStart.daysUntil(gridEnd) + 1) { gridStart.plus(it, DateTimeUnit.DAY) }
+}
+
 @Composable
 fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onProgramSelected: (Program) -> Unit) {
+    val tz = TimeZone.currentSystemDefault()
+    val today = remember { Clock.System.todayIn(tz) }
+    println("CAL viewData.start=${viewData.startDate.toLocalDateTime(tz)} grid0=${viewData.weeks.first()}")
+    // start was created with atStartOfDayIn(tz), so its local date is exactly the 1st of the month
+    val firstOfMonth = remember(viewData) { viewData.startDate.toLocalDateTime(tz).date }
+    val weeks = remember(firstOfMonth) { monthGrid(firstOfMonth).chunked(7) }
+    val programsByDate = remember(viewData) {
+        viewData.weeks.flatMap { it.programs }
+            .groupBy { it.startDate.toLocalDateTime(tz).date }   // keeps DB order within a day
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             (if (getPlatform().isMobile) getDaysOfWeekShort() else getDaysOfWeek()).forEach {
@@ -194,37 +213,30 @@ fun MonthlyProgramsView(viewData: ProgramsViewModel.ViewData, onProgramSelected:
         }
         Spacer(modifier = Modifier.height(4.dp))
         Column(Modifier.fillMaxSize()) {
-            val tz = TimeZone.currentSystemDefault()
-            val dayPadding = when (getPlatform().isMobile) {
-                true -> 1
-                false -> 4
-            }.dp
-            viewData.weeks.forEachIndexed { weekIdx, week ->
+            val dayPadding = if (getPlatform().isMobile) 1.dp else 4.dp
+            weeks.forEach { week ->
                 Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxSize().weight(1f)) {
-                    val startDate = week.weekStart.toLocalDateTime(TimeZone.currentSystemDefault()).date
-                    week.getCategorizedPrograms().forEachIndexed { index, dailyProgram ->
+                    week.forEach { date ->
                         Column(
                             Modifier.padding(dayPadding).clip(RoundedCornerShape(dayPadding))
                                 .background(color = Theme.colorScheme.background).fillMaxSize().weight(1f),
                             verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            val date = startDate.plus(index, DateTimeUnit.DAY)
                             Text(
                                 date.day.toString(),
                                 fontWeight = FontWeight.Bold,
-                                color = if (weekIdx in 1..3 || (weekIdx == 4 && startDate.month == date.month) || (weekIdx == 0 && startDate.month != date.month)) Color.White else Color.Gray,
-                                modifier = if (Clock.System.todayIn(tz) == date) Modifier.padding(12.dp, 4.dp)
+                                color = if (date.month == firstOfMonth.month) Color.White else Color.Gray,
+                                modifier = if (date == today) Modifier.padding(12.dp, 4.dp)
                                     .clip(RoundedCornerShape(4.dp))
                                     .background(Theme.colorScheme.surface) else Modifier
                             )
                             Spacer(Modifier.height(4.dp))
-                            for (program in dailyProgram) {
+                            for (program in programsByDate[date].orEmpty()) {
                                 Row(
                                     Modifier.padding(4.dp).clip(RoundedCornerShape(4.dp)).background(program.color)
-                                        .fillMaxWidth().clickable {
-                                            onProgramSelected(program)
-                                        }) {
+                                        .fillMaxWidth().clickable { onProgramSelected(program) }
+                                ) {
                                     Text(
                                         program.title,
                                         fontSize = 12.sp,
