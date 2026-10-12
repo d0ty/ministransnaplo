@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.SubmitButton
@@ -30,7 +29,7 @@ fun NewMemberDialog(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
     showSnackbar: (String) -> Unit,
-    viewModel: MembersViewModel = viewModel { MembersViewModel() }
+    viewModel: MembersViewModel
 ) {
     val scope = rememberCoroutineScope()
     Column {

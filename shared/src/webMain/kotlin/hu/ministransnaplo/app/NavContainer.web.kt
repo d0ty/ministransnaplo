@@ -31,6 +31,7 @@ import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import hu.ministransnaplo.app.models.User
 import hu.ministransnaplo.app.ui.*
 import hu.ministransnaplo.app.ui.icons.AppLogo
 import hu.ministransnaplo.app.ui.icons.IconVariants
@@ -39,7 +40,6 @@ import hu.ministransnaplo.app.ui.icons.lucide.*
 import hu.ministransnaplo.app.ui.screens.LoggedIn
 import hu.ministransnaplo.app.ui.screens.auth.Login
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
-import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 
 @Composable
@@ -108,7 +108,7 @@ object SettingsMenuItem : NavMenuItem {
 }
 
 @Composable
-fun UserInfo(userState: AppViewModel.UserState) {
+fun UserInfo(userState: User) {
     Row {
         Image(LucideUserRound, contentDescription = null, modifier = Modifier.size(48.dp))
         Spacer(Modifier.width(10.dp))
@@ -159,9 +159,13 @@ actual fun NavContainer(
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        userState.guard?.ProfilePicture(viewModel.supabase, size = 42.dp)
+                        userState.userOrNull?.guard?.ProfilePicture(size = 42.dp)
                         Spacer(Modifier.width(10.dp))
-                        Text(userState.guard?.name ?: "Gárda", fontWeight = FontWeight.Medium, fontSize = 24.sp)
+                        Text(
+                            userState.userOrNull?.guard?.name ?: "Gárda",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 24.sp
+                        )
                     }
                     Spacer(Modifier.height(30.dp))
                     Column {
@@ -186,7 +190,7 @@ actual fun NavContainer(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        UserInfo(userState)
+                        if (userState.userOrNull != null) UserInfo(userState.userOrNull!!)
                         Image(
                             LucideChevronDown,
                             contentDescription = null,
@@ -216,7 +220,7 @@ actual fun NavContainer(
                 ) {
                     Column {
                         Column(Modifier.padding(16.dp, 16.dp, 16.dp, 4.dp)) {
-                            UserInfo(userState)
+                            UserInfo(userState.userOrNull!!)
                         }
                         HorizontalDivider(Modifier.fillMaxWidth(), 1.dp, Color(0xFF404040))
                         ProfileAction(LucideUserRoundKey, "2. faktor visszaállítása", onClicked = {
@@ -229,7 +233,7 @@ actual fun NavContainer(
                         })
                         ProfileAction(LucideLogOut, "Kijelentkezés", onClicked = {
                             viewModel.viewModelScope.launch {
-                                viewModel.supabase.auth.signOut()
+                                viewModel.singOut()
                                 onNavigation(Login)
                             }
                         })

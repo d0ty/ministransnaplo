@@ -8,24 +8,19 @@ package hu.ministransnaplo.app.ui.screens.members
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Member
+import hu.ministransnaplo.app.repositories.AuthRepository
+import hu.ministransnaplo.app.repositories.MemberRepository
 import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.executeSupabaseAction
-import hu.ministransnaplo.app.util.invokeWithJsonBody
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.functions.functions
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Order
-import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.put
 
-class MembersViewModel : AppViewModel() {
+class MembersViewModel(authRepo: AuthRepository, val memberRepo: MemberRepository) : AppViewModel(authRepo) {
     data class MemberTableOrder(
         val column: MemberTableColumns? = null,
         val ascending: Boolean = true,
@@ -56,17 +51,8 @@ class MembersViewModel : AppViewModel() {
     fun fetchMemberTable(query: String = "", orderColumn: MemberTableColumns? = null, ascending: Boolean = true) {
         viewModelScope.launch {
             tableState.update { it.copy(isLoading = true, order = MemberTableOrder(orderColumn, ascending)) }
-            supabase.auth.awaitInitialization()
-            supabase.from("member_data").select() {
-                if (orderColumn != null && orderColumn.id != null)
-                    order(
-                        orderColumn.id, if (ascending) Order.ASCENDING else Order.DESCENDING,
-                        orderColumn == MemberTableColumns.Rank && ascending
-                    )
-                if (query.isNotBlank()) filter {
-                    like("name", "%$query%")
-                }
-            }.decodeAs<List<Member>>().also { result ->
+            authRepo.awaitAuthInit()
+            memberRepo.fetchTableData(query, orderColumn, ascending).also { result ->
                 tableState.update { MemberTableState(false, query, MemberTableOrder(orderColumn, ascending), result) }
             }
         }
@@ -80,26 +66,12 @@ class MembersViewModel : AppViewModel() {
         )
     }
 
-    private suspend fun inviteLeaderInternal(member: Member, email: String): DbResult {
-        supabase.functions.invokeWithJsonBody("invite-user") {
-            put("member_id", member.id)
-            put("email", email)
-        }
-        return DbResult.Success.NoContent
-    }
-
     fun createMember(name: String, isLecturer: Boolean, email: String, onResult: (DbResult) -> Unit) {
+        val newMember =
+            Member.New(guard = userState.value.userOrNull!!.guard!!.id, name = name, isLecturer = isLecturer)
         viewModelScope.launch(Dispatchers.Default) {
             executeSupabaseAction {
-                val member = supabase.from("member")
-                    .insert(Member.New(guard = userState.value.guard!!.id, name = name, isLecturer = isLecturer)) {
-                        select()
-                    }.decodeSingle<Member>()
-                if (email.isBlank()) {
-                    return@executeSupabaseAction DbResult.Success.WithContent(member)
-                }
-                inviteLeaderInternal(member, email)
-                return@executeSupabaseAction DbResult.Success.WithContent(member)
+                return@executeSupabaseAction memberRepo.createMember(newMember, email)
             }.also { fetchMemberTable() }.also(onResult)
         }
     }
@@ -107,16 +79,10 @@ class MembersViewModel : AppViewModel() {
     fun updateMember(data: Map<String, DCFieldValue>, onResult: (DbResult) -> Unit) {
         if (currentMember.value == null) throw IllegalStateException("Can't update no member")
         viewModelScope.launch(Dispatchers.Default) {
-            executeSupabaseAction {
-                supabase.from("member").update(data) {
-                    select()
-                    filter {
-                        eq("id", currentMember.value!!.id)
-                    }
-                }.decodeSingle<Member>()
-                    .also { updated -> currentMember.update { updated.copy(email = it?.email) } }
-                fetchMemberTable()
-                return@executeSupabaseAction DbResult.Success.NoContent
+            memberRepo.updateMember(currentMember.value!!.id, data).also { result ->
+                if (result is DbResult.Success.WithContent<*>) {
+                    currentMember.update { (result.result as Member).copy(email = result.result.email) }
+                }
             }.also(onResult)
         }
     }
@@ -125,7 +91,7 @@ class MembersViewModel : AppViewModel() {
         if (currentMember.value == null) throw IllegalStateException("Can't invite leader without a current member selected")
         viewModelScope.launch(Dispatchers.Default) {
             val result = executeSupabaseAction {
-                inviteLeaderInternal(currentMember.value!!, email)
+                memberRepo.inviteLeader(currentMember.value!!, email)
             }
             fetchMemberTable()
             onResult(result)
@@ -136,20 +102,7 @@ class MembersViewModel : AppViewModel() {
         if (currentMember.value == null) throw IllegalStateException("Can't delete member without a current member selected")
         viewModelScope.launch(Dispatchers.Default) {
             val result = executeSupabaseAction {
-                if (currentMember.value!!.isLeader) {
-                    val userDeleteResp = supabase.functions.invokeWithJsonBody("delete-user") {
-                        put("member_login", currentMember.value!!.userId)
-                    }
-                    if (!userDeleteResp.status.isSuccess()) {
-                        return@executeSupabaseAction DbResult.Failure.Error
-                    }
-                }
-                supabase.from("member").delete {
-                    filter {
-                        eq("id", currentMember.value!!.id)
-                    }
-                }
-                val result = DbResult.Success.WithContent(currentMember.value!!)
+                val result = memberRepo.deleteMember(currentMember.value!!)
                 currentMember.update { null }
                 fetchMemberTable()
                 result
@@ -163,11 +116,7 @@ class MembersViewModel : AppViewModel() {
         if (currentMember.value!!.isLeader.not()) throw IllegalStateException("Can only reset leader member MFA")
         viewModelScope.launch(Dispatchers.Default) {
             val result = executeSupabaseAction {
-                supabase.functions.invokeWithJsonBody("reset-mfa") {
-                    put("user_id", currentMember.value!!.userId)
-                }.status.isSuccess().let {
-                    if (it) DbResult.Success.NoContent else DbResult.Failure.Error
-                }
+                memberRepo.resetLeaderMFA(currentMember.value!!)
             }
             onResult(result)
         }

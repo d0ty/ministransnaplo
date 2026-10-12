@@ -15,14 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.ImageLoader
 import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.network.ktor3.KtorNetworkFetcherFactory
-import io.github.jan.supabase.SupabaseClient
+import hu.ministransnaplo.app.util.SupabaseImage
 import io.github.jan.supabase.annotations.SupabaseExperimental
-import io.github.jan.supabase.coil.coil3
-import io.github.jan.supabase.storage.authenticatedStorageItem
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -35,12 +30,7 @@ class Guard(
 ) {
     @OptIn(SupabaseExperimental::class)
     @Composable
-    fun ProfilePicture(supabase: SupabaseClient, size: Dp = 100.dp) {
-        val imageLoader = ImageLoader.Builder(LocalPlatformContext.current)
-            .components {
-                add(supabase.coil3)
-                add(KtorNetworkFetcherFactory())
-            }.build()
+    fun ProfilePicture(size: Dp = 100.dp) {
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
@@ -49,8 +39,7 @@ class Guard(
                 Modifier.size(size).clip(RoundedCornerShape(16.dp)).background(color = Color.White).padding(4.dp)
             ) {
                 AsyncImage(
-                    model = authenticatedStorageItem("guard-profile", "$id.png"),
-                    imageLoader = imageLoader,
+                    model = SupabaseImage("guard-profile", "$id.png"),
                     contentDescription = "",
                     modifier = Modifier.fillMaxSize()
                 )

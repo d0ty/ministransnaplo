@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DataCard
@@ -36,7 +35,7 @@ object MemberDetail : NavItem
 fun MemberDetailDialog(
     close: () -> Unit,
     navigate: (NavItem) -> Unit,
-    viewModel: MembersViewModel = viewModel { MembersViewModel() }
+    viewModel: MembersViewModel
 ) {
     var editing by remember { mutableStateOf(false) }
     val member by viewModel.currentMember.collectAsState()
@@ -74,7 +73,7 @@ fun MemberDetailDialog(
                 )
             )
         }
-    }, commandsEnabled = viewModel.userState.value.isGuardOwner) {
+    }, commandsEnabled = viewModel.userState.value.userOrNull?.isGuardOwner ?: false) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
             DataCard(modifier = Modifier.fillMaxFlexSpace(), editing = editing, onEditFinishes = { data ->
                 if (data == null) {

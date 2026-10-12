@@ -6,23 +6,29 @@
 
 package hu.ministransnaplo.app
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import androidx.navigation.toRoute
+import coil3.compose.setSingletonImageLoaderFactory
+import hu.ministransnaplo.app.models.AuthState
+import hu.ministransnaplo.app.models.MFAState
 import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.models.Program
+import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.Theme
 import hu.ministransnaplo.app.ui.prompts.*
 import hu.ministransnaplo.app.ui.screens.LoggedIn
@@ -35,30 +41,33 @@ import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
 import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
 import hu.ministransnaplo.app.ui.screens.members.*
 import hu.ministransnaplo.app.ui.screens.programs.*
+import hu.ministransnaplo.app.util.AppImageLoaderFactory
 import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.SimpleNavType
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.reflect.typeOf
+
+@Serializable
+object Splash : NavItem
 
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
 @Composable
 @Preview
-fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
+fun App() {
     val navController = rememberNavController()
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    scope.launch {
-        viewModel.userState.collect {
-            when (it.mfaState) {
-                null -> Unit
-                AppViewModel.MFAState.ENROLL_REQUIRED -> navController.navigate(MFAEnroll)
-                AppViewModel.MFAState.CHALLENGE_REQUIRED -> navController.navigate(MFAChallenge)
-                AppViewModel.MFAState.VERIFIED -> navController.navigate(LoggedIn)
-            }
-        }
+    val viewModel: AppViewModel = koinViewModel()
+    val imageLoaderFactory = koinInject<AppImageLoaderFactory>()
+    setSingletonImageLoaderFactory { ctx ->
+        imageLoaderFactory.newImageLoader(ctx)
     }
+
+
     MaterialTheme(colorScheme = Theme.colorScheme) {
         Scaffold(
             modifier = Modifier
@@ -68,7 +77,15 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
             containerColor = Theme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) {
-            NavHost(navController = navController, startDestination = Login) {
+            NavHost(
+                navController = navController,
+                startDestination = Splash
+            ) {
+                composable<Splash> {
+                    Box(Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(Modifier.size(100.dp).align(Alignment.Center))
+                    }
+                }
                 composable<Login> {
                     LoginScreen(onLoggedIn = {
                         navController.navigate(it)
@@ -85,7 +102,7 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                     })
                 }
                 composable<MFAChallenge> {
-                    ChallengeScreen(onSucess = {
+                    ChallengeScreen(onSuccess = {
                         navController.navigate(LoggedIn)
                     })
                 }
@@ -94,9 +111,7 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<MembersRoot>()
                         }
-                        val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
-                            MembersViewModel()
-                        }
+                        val sharedViewModel: MembersViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
 
                         MembersScreen(onNavigation = {
                             navController.navigate(it)
@@ -108,9 +123,7 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<MembersRoot>()
                         }
-                        val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
-                            MembersViewModel()
-                        }
+                        val sharedViewModel: MembersViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
 
                         NewMemberDialog(
                             close = { navController.popBackStack() },
@@ -132,9 +145,7 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<MembersRoot>()
                         }
-                        val sharedViewModel: MembersViewModel = viewModel(parentEntry) {
-                            MembersViewModel()
-                        }
+                        val sharedViewModel: MembersViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
 
                         val entry = navController.currentBackStackEntry
                         LaunchedEffect(entry, sharedViewModel) {
@@ -202,9 +213,7 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<ProgramsRoot>()
                         }
-                        val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
-                            ProgramsViewModel()
-                        }
+                        val sharedViewModel: ProgramsViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
 
                         ProgramsScreen(onNavigation = {
                             navController.navigate(it)
@@ -216,9 +225,8 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<ProgramsRoot>()
                         }
-                        val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
-                            ProgramsViewModel()
-                        }
+                        val sharedViewModel: ProgramsViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
 
                         NewProgramDialog(
                             close = { navController.popBackStack() },
@@ -237,9 +245,7 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry<ProgramsRoot>()
                         }
-                        val sharedViewModel: ProgramsViewModel = viewModel(parentEntry) {
-                            ProgramsViewModel()
-                        }
+                        val sharedViewModel: ProgramsViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
 
                         val entry = navController.currentBackStackEntry
                         LaunchedEffect(entry, sharedViewModel) {
@@ -308,4 +314,21 @@ fun App(viewModel: AppViewModel = viewModel { AppViewModel() }) {
             }
         }
     }
+    LaunchedEffect(viewModel) {
+        viewModel.userState.collect {
+            when (it) {
+                is AuthState.Loading -> Unit
+                is AuthState.Unauthenticated -> navController.navigate(Login)
+                is AuthState.Authenticated -> {
+                    when (it.user.mfaState) {
+                        null -> Unit
+                        MFAState.ENROLL_REQUIRED -> navController.navigate(MFAEnroll)
+                        MFAState.CHALLENGE_REQUIRED -> navController.navigate(MFAChallenge)
+                        MFAState.VERIFIED -> navController.navigate(LoggedIn)
+                    }
+                }
+            }
+        }
+    }
+
 }

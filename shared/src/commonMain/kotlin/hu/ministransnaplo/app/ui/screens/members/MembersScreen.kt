@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ministransnaplo.app.NavContainer
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.FullScreenCard
@@ -38,12 +37,12 @@ enum class MemberTableColumns(val id: String?, val title: String) {
 }
 
 @Composable
-fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel = viewModel { MembersViewModel() }) {
+fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel) {
     val userState by viewModel.userState.collectAsState()
     val tableState by viewModel.tableState.collectAsState()
     NavContainer(onNavigation = onNavigation) {
         Column(Modifier.fillMaxSize()) {
-            ScreenTitleBar("Tagok", LucideUserPlus, userState.isGuardOwner) {
+            ScreenTitleBar("Tagok", LucideUserPlus, userState.userOrNull?.isGuardOwner ?: false) {
                 onNavigation(NewMember)
             }
             Spacer(Modifier.height(16.dp))

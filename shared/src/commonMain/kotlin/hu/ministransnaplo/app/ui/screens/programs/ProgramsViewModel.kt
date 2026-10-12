@@ -10,10 +10,10 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
 import hu.ministransnaplo.app.models.Program
+import hu.ministransnaplo.app.repositories.AuthRepository
+import hu.ministransnaplo.app.repositories.ProgramRepository
 import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.*
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +25,7 @@ import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-class ProgramsViewModel : AppViewModel() {
+class ProgramsViewModel(val programRepo: ProgramRepository, authRepo: AuthRepository) : AppViewModel(authRepo) {
 
     data class ViewState(
         val viewMode: ProgramsViewMode = ProgramsViewMode.MONTHLY,
@@ -195,20 +195,13 @@ class ProgramsViewModel : AppViewModel() {
             val bounds = (fromOffset..toOffset + 1)
                 .map { periodStart(viewMode, anchor, it).atStartOfDayIn(tz) }
             println("CAL bounds=" + bounds.map { it.toLocalDateTime(tz).date })
-            val data = supabase.from("programs").select {
-                order("start", Order.ASCENDING)
-                filter {
-                    and {
-                        gte("start", bounds.first())
-                        lt("start", bounds.last())
-                    }
-                }
-            }.decodeAs<List<Program>>()
 
             val views = (fromOffset..toOffset).associateWith { offset ->
                 val i = offset - fromOffset
                 ViewData(viewMode, bounds[i], bounds[i + 1])
             }
+
+            val data = programRepo.fetchRange(bounds.first(), bounds.last())
 
             var idx = 0
             for (program in data) {
@@ -235,19 +228,18 @@ class ProgramsViewModel : AppViewModel() {
         onResult: (result: DbResult) -> Unit
     ) {
         val duration = calculateInterval(start, end)
+        val newProgram = Program.New(
+            guard = userState.value.userOrNull!!.guard!!.id,
+            title = title,
+            description = description,
+            startDate = Instant.fromEpochMilliseconds(start),
+            duration = duration,
+            mandatory = mandatory
+        )
+
         viewModelScope.launch {
             executeSupabaseAction {
-                supabase.from("programs").insert(
-                    Program.New(
-                        guard = userState.value.guard!!.id,
-                        title = title,
-                        description = description,
-                        startDate = Instant.fromEpochMilliseconds(start),
-                        duration = duration,
-                        mandatory = mandatory
-                    )
-                )
-                return@executeSupabaseAction DbResult.Success.NoContent
+                return@executeSupabaseAction programRepo.createProgram(newProgram)
             }.also(onResult)
             reload()
         }
@@ -257,13 +249,7 @@ class ProgramsViewModel : AppViewModel() {
         if (currentProgram.value == null) throw IllegalStateException("Can't update no program")
         viewModelScope.launch(Dispatchers.Default) {
             executeSupabaseAction {
-                supabase.from("programs").update(data) {
-                    select()
-                    filter {
-                        eq("id", currentProgram.value!!.id)
-                    }
-                }.decodeSingle<Program>()
-                return@executeSupabaseAction DbResult.Success.NoContent
+                return@executeSupabaseAction programRepo.updateProgram(currentProgram.value!!.id, data)
             }.also(onResult)
             reload()
         }
@@ -273,12 +259,7 @@ class ProgramsViewModel : AppViewModel() {
         if (currentProgram.value == null) throw IllegalStateException("Can't delete program without a current program selected")
         viewModelScope.launch(Dispatchers.Default) {
             val result = executeSupabaseAction {
-                supabase.from("programs").delete {
-                    filter {
-                        eq("id", currentProgram.value!!.id)
-                    }
-                }
-                val result = DbResult.Success.WithContent(currentProgram.value!!)
+                val result = programRepo.deleteProgram(currentProgram.value!!)
                 currentProgram.update { null }
                 result
             }

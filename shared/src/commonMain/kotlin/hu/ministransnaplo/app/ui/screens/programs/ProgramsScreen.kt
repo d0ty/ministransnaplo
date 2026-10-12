@@ -62,7 +62,7 @@ fun ProgramsScreen(onNavigation: (NavItem) -> Unit, viewModel: ProgramsViewModel
     val scope = rememberCoroutineScope()
     NavContainer(onNavigation = onNavigation) {
         Column(modifier = Modifier.fillMaxSize()) {
-            ScreenTitleBar("Programok", LucideCalendarPlus, userState.isGuardOwner) {
+            ScreenTitleBar("Programok", LucideCalendarPlus, userState.userOrNull?.isGuardOwner ?: false) {
                 onNavigation(NewProgram)
             }
             Spacer(modifier = Modifier.height(16.dp))

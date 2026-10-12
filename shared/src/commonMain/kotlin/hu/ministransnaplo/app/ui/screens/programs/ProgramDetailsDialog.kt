@@ -57,7 +57,7 @@ fun ProgramDetailDialog(
                 )
             )
         }
-    }, commandsEnabled = viewModel.userState.value.isGuardOwner) {
+    }, commandsEnabled = viewModel.userState.value.userOrNull?.isGuardOwner ?: false) {
         FlexBox(modifier = Modifier.fillMaxWidth()) {
             DataCard(Modifier.fillMaxFlexSpace(), editing, onEditFinishes = { result ->
                 if (result == null) {

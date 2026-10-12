@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 doty and László Rab
- * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
  */
 
 package hu.ministransnaplo.app.ui.screens.auth
@@ -16,7 +16,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ministransnaplo.app.ui.NavItem
 import hu.ministransnaplo.app.ui.components.SingleCardScreen
 import hu.ministransnaplo.app.ui.components.SubmitButton
@@ -28,13 +27,14 @@ import io.github.jan.supabase.compose.auth.ui.email.OutlinedEmailField
 import io.github.jan.supabase.compose.auth.ui.password.OutlinedPasswordField
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
 object Login : NavItem
 
 @Composable
 @OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
-fun LoginScreen(onLoggedIn: (NavItem) -> Unit, viewModel: LoginViewModel = viewModel { LoginViewModel() }) {
+fun LoginScreen(onLoggedIn: (NavItem) -> Unit, viewModel: LoginViewModel = koinViewModel()) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     SingleCardScreen(snackbarHostState = snackbarHostState) {

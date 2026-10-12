@@ -1,6 +1,6 @@
 /*
  * Copyright 2026 doty and László Rab
- * Use of this source code is governed by the GNU General Public License that can be found in the LICENSE file.
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
  */
 
 package hu.ministransnaplo.app.ui.screens.auth.mfa.enroll
@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -38,13 +37,14 @@ import hu.ministransnaplo.app.util.toClipEntry
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import org.koin.compose.viewmodel.koinViewModel
 
 @Serializable
 object MFAEnroll : NavItem {}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAEnrollViewModel = viewModel { MFAEnrollViewModel() }) {
+fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAEnrollViewModel = koinViewModel()) {
     val state = viewModel.state.collectAsStateWithLifecycle()
     val imageLoader = ImageLoader.Builder(LocalPlatformContext.current)
         .components {
@@ -69,8 +69,8 @@ fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAEnrollViewModel = viewModel
             Box(
                 Modifier.size(200.dp).clip(RoundedCornerShape(16.dp)).background(color = Color.White).padding(4.dp)
             ) {
-                if (!state.value.loading) AsyncImage(
-                    model = state.value.qrCode.toByteArray(),
+                if (state.value != null) AsyncImage(
+                    model = state.value!!.qrCode.toByteArray(),
                     contentDescription = "",
                     imageLoader = imageLoader,
                     modifier = Modifier.width(200.dp).align(Alignment.Center)
@@ -83,14 +83,14 @@ fun EnrollScreen(onSucess: () -> Unit, viewModel: MFAEnrollViewModel = viewModel
         Spacer(Modifier.height(8.dp))
         Row(Modifier.height(IntrinsicSize.Min)) {
             Text(
-                state.value.secret,
+                state.value?.secret ?: "",
                 modifier = Modifier.align(Alignment.CenterVertically).fillMaxWidth(0.8f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Image(LucideClipboard, contentDescription = "", modifier = Modifier.clickable {
                 viewModel.viewModelScope.launch {
-                    clipboard.setClipEntry(state.value.secret.toClipEntry())
+                    clipboard.setClipEntry(state.value?.secret?.toClipEntry())
                 }
             })
         }
