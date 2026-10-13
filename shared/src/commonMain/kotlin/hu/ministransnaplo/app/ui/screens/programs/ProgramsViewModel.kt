@@ -9,8 +9,10 @@ import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
+import hu.ministransnaplo.app.models.Justification
 import hu.ministransnaplo.app.models.Program
 import hu.ministransnaplo.app.repositories.AuthRepository
+import hu.ministransnaplo.app.repositories.JustificationRepository
 import hu.ministransnaplo.app.repositories.ProgramRepository
 import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.*
@@ -25,7 +27,11 @@ import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-class ProgramsViewModel(val programRepo: ProgramRepository, authRepo: AuthRepository) : AppViewModel(authRepo) {
+class ProgramsViewModel(
+    val programRepo: ProgramRepository,
+    val justificationRepo: JustificationRepository,
+    authRepo: AuthRepository
+) : AppViewModel(authRepo) {
 
     data class ViewState(
         val viewMode: ProgramsViewMode = ProgramsViewMode.MONTHLY,
@@ -97,6 +103,9 @@ class ProgramsViewModel(val programRepo: ProgramRepository, authRepo: AuthReposi
     val currentProgram: StateFlow<Program?>
         field = MutableStateFlow(null)
 
+    val currentJustifications: StateFlow<List<Justification.WithMember>>
+        field = MutableStateFlow(emptyList())
+
     private val requested = mutableSetOf<Int>()
 
     @Volatile
@@ -110,6 +119,16 @@ class ProgramsViewModel(val programRepo: ProgramRepository, authRepo: AuthReposi
 
     fun selectProgram(program: Program?) {
         currentProgram.update { program }
+        if (program != null) {
+            viewModelScope.launch {
+                val justifications = executeSupabaseAction {
+                    DbResult.Success.WithContent(justificationRepo.getByProgram(program.id))
+                }
+                if (justifications is DbResult.Success.WithContent<*>) {
+                    currentJustifications.update { justifications.result as List<Justification.WithMember> }
+                }
+            }
+        }
     }
 
     private fun periodStartOf(viewMode: ProgramsViewMode, date: LocalDate) = when (viewMode) {

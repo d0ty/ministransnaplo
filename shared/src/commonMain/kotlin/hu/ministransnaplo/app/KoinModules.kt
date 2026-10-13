@@ -51,6 +51,7 @@ val dataModule = module {
     }
     singleOf(::SupabaseMemberRepository) bind MemberRepository::class
     singleOf(::SupabaseProgramRepository) bind ProgramRepository::class
+    singleOf(::SupabaseJustificationRepository) bind JustificationRepository::class
 }
 
 val viewModelModule = module {

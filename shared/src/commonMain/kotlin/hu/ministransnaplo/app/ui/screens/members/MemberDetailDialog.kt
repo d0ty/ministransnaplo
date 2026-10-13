@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -133,7 +134,7 @@ fun MemberDetailDialog(
                         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 2.dp)
                     ) {
                         Text("@MM.DD. HH:MM Program neve", fontSize = 12.sp)
-                        Image(LucideCircleCheckBig, null, Modifier.size(16.dp).clickable {
+                        Image(getLucideCircleCheckBig(Color.White), null, Modifier.size(16.dp).clickable {
                             // TODO: implement with the future program system
                         })
                     }

@@ -20,9 +20,9 @@ import hu.ministransnaplo.app.ui.components.CardColumn
 import hu.ministransnaplo.app.ui.components.DataCard
 import hu.ministransnaplo.app.ui.components.DialogContainer
 import hu.ministransnaplo.app.ui.components.FlexBox
-import hu.ministransnaplo.app.ui.icons.lucide.LucideCircleCheckBig
 import hu.ministransnaplo.app.ui.icons.lucide.LucideOctagonX
 import hu.ministransnaplo.app.ui.icons.lucide.LucideSquarePen
+import hu.ministransnaplo.app.ui.icons.lucide.getLucideCircleCheckBig
 import hu.ministransnaplo.app.ui.prompts.DestructiveActionPrompt
 import hu.ministransnaplo.app.ui.prompts.DestructivePromptRequests
 import hu.ministransnaplo.app.util.DbResult
@@ -42,6 +42,7 @@ fun ProgramDetailDialog(
         close()
         return
     }
+    val justifications by viewModel.currentJustifications.collectAsState()
     var editing by remember { mutableStateOf(false) }
 
     DialogContainer("${program!!.title} adatai", 500.dp, close, navigate, commands = {
@@ -84,15 +85,20 @@ fun ProgramDetailDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth().defaultMinSize(200.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 2.dp)
-                    ) {
-                        Text("User 1", fontSize = 12.sp)
-                        Image(LucideCircleCheckBig, null, Modifier.size(16.dp).clickable {
-                            // TODO: implement with the future justification system
-                        })
+                    justifications.forEach { justification ->
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 2.dp)
+                        ) {
+                            Text(justification.memberName)
+                            Image(
+                                getLucideCircleCheckBig(justification.getColor()),
+                                null,
+                                Modifier.size(20.dp).clickable {
+                                    // TODO: implement with the future justification system
+                                })
+                        }
                     }
                 }
             }

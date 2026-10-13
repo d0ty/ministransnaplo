@@ -58,41 +58,33 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-val LucideCircleCheckBig: ImageVector
-    get() {
-        if (_LucideCircleCheckBig != null) return _LucideCircleCheckBig!!
-
-        _LucideCircleCheckBig = ImageVector.Builder(
-            name = "circle-check-big",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(21.801f, 10f)
-                arcTo(10f, 10f, 0f, true, true, 17f, 3.335f)
-            }
-            path(
-                fill = SolidColor(Color.Transparent),
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(9f, 11f)
-                lineToRelative(3f, 3f)
-                lineTo(22f, 4f)
-            }
-        }.build()
-
-        return _LucideCircleCheckBig!!
-    }
-
-private var _LucideCircleCheckBig: ImageVector? = null
+fun getLucideCircleCheckBig(color: Color): ImageVector =
+    ImageVector.Builder(
+        name = "circle-check-big",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).apply {
+        path(
+            fill = SolidColor(Color.Transparent),
+            stroke = SolidColor(color),
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round
+        ) {
+            moveTo(21.801f, 10f)
+            arcTo(10f, 10f, 0f, true, true, 17f, 3.335f)
+        }
+        path(
+            fill = SolidColor(Color.Transparent),
+            stroke = SolidColor(color),
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round
+        ) {
+            moveTo(9f, 11f)
+            lineToRelative(3f, 3f)
+            lineTo(22f, 4f)
+        }
+    }.build()
