@@ -155,4 +155,20 @@ class MembersViewModel(
             }
         }
     }
+
+    fun resetMemberOmissions() {
+        viewModelScope.launch(Dispatchers.Default) {
+            omittedPrograms.value.forEach { program ->
+                val res = justificationRepository.createJustification(
+                    program.programId,
+                    currentMember.value!!.id,
+                    userState.value.userOrNull!!.guard!!.id
+                )
+                if (res is DbResult.Failure)
+                    return@launch
+            }
+            fetchMemberOmissions()
+            fetchMemberTable()
+        }
+    }
 }

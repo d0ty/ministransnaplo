@@ -126,7 +126,7 @@ fun MemberDetailDialog(
                 ) {
                     Text("Igazolatlan programok", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Image(LucideRotateCcw, null, Modifier.size(20.dp).clickable {
-                        // TODO: implement with the future program system
+                        viewModel.resetMemberOmissions()
                     })
                 }
                 Spacer(Modifier.height(12.dp))
