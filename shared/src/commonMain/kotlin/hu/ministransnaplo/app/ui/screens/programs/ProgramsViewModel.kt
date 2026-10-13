@@ -298,7 +298,7 @@ class ProgramsViewModel(
                 val currentJustifications = currentJustifications.value
                 val existing = currentJustifications.find { it.memberId == memberId && it.justificationId != null }
                 if (existing != null) {
-                    TODO("Justification deletion")
+                    justificationRepo.deleteJustification(existing.justificationId!!)
                 } else {
                     justificationRepo.createJustification(
                         currentProgram.value!!.id,

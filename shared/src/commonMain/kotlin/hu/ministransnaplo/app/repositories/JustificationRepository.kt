@@ -15,6 +15,7 @@ import io.github.jan.supabase.postgrest.rpc
 interface JustificationRepository {
     suspend fun getByProgram(programId: String): List<Justification.WithMember>
     suspend fun createJustification(programId: String, memberId: String, guardId: String): DbResult
+    suspend fun deleteJustification(id: String): DbResult
 }
 
 class SupabaseJustificationRepository(val supabase: SupabaseClient) : JustificationRepository {
@@ -31,6 +32,11 @@ class SupabaseJustificationRepository(val supabase: SupabaseClient) : Justificat
         guardId: String
     ): DbResult {
         supabase.from("justification").insert(mapOf("program" to programId, "member" to memberId, "guard" to guardId))
+        return DbResult.Success.NoContent
+    }
+
+    override suspend fun deleteJustification(id: String): DbResult {
+        supabase.from("justification").delete { filter { eq("id", id) } }
         return DbResult.Success.NoContent
     }
 }
