@@ -32,8 +32,8 @@ object MembersRoot : NavItem
 enum class MemberTableColumns(val id: String?, val title: String) {
     Name("name", "Név"),
     Rank("login", "Rang"),
-    Justifications(null, "Igazolások"),
-    Omissions(null, "Mulasztások")
+    Justifications("justificationCount", "Igazolások"),
+    Omissions("omissionCount", "Mulasztások")
 }
 
 @Composable
@@ -109,8 +109,8 @@ fun MembersScreen(onNavigation: (NavItem) -> Unit, viewModel: MembersViewModel) 
                         row {
                             cell { Text(member.name) }
                             cell { Text(member.rank) }
-                            cell { Text("0") }
-                            cell { Text("0") }
+                            cell { Text(member.justificationCount.toString()) }
+                            cell { Text(member.omissionCount.toString()) }
                             cell {
                                 Image(
                                     imageVector = LucideArrowRight.lightIcon,

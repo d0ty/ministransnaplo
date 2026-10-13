@@ -18,6 +18,10 @@ data class Member(
     @SerialName("login")
     val userId: String? = null,
     val email: String? = null,
+    @SerialName("justificationcount")
+    val justificationCount: Int? = null,
+    @SerialName("omissioncount")
+    val omissionCount: Int? = null,
 ) {
     val isLeader: Boolean
         get() = userId != null
