@@ -8,6 +8,7 @@ package hu.ministransnaplo.app.models
 import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 sealed interface Justification {
     val justificationId: String?
@@ -22,5 +23,15 @@ sealed interface Justification {
         val memberName: String,
         @SerialName("justification_id")
         override val justificationId: String?
+    ) : Justification
+
+    @Serializable
+    data class WithProgram(
+        @SerialName("id")
+        val programId: String,
+        val title: String,
+        val start: Instant,
+        @SerialName("justification_id")
+        override val justificationId: String?,
     ) : Justification
 }

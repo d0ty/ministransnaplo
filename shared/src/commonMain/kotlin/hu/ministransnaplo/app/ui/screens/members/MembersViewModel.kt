@@ -7,8 +7,10 @@ package hu.ministransnaplo.app.ui.screens.members
 
 import androidx.lifecycle.viewModelScope
 import hu.ministransnaplo.app.AppViewModel
+import hu.ministransnaplo.app.models.Justification
 import hu.ministransnaplo.app.models.Member
 import hu.ministransnaplo.app.repositories.AuthRepository
+import hu.ministransnaplo.app.repositories.JustificationRepository
 import hu.ministransnaplo.app.repositories.MemberRepository
 import hu.ministransnaplo.app.ui.components.DCFieldValue
 import hu.ministransnaplo.app.util.DbResult
@@ -20,7 +22,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-class MembersViewModel(authRepo: AuthRepository, val memberRepo: MemberRepository) : AppViewModel(authRepo) {
+class MembersViewModel(
+    authRepo: AuthRepository,
+    val memberRepo: MemberRepository,
+    val justificationRepository: JustificationRepository
+) : AppViewModel(authRepo) {
     data class MemberTableOrder(
         val column: MemberTableColumns? = null,
         val ascending: Boolean = true,
@@ -39,6 +45,9 @@ class MembersViewModel(authRepo: AuthRepository, val memberRepo: MemberRepositor
     val currentMember: StateFlow<Member?>
         field = MutableStateFlow(null)
 
+    val omittedPrograms: StateFlow<List<Justification.WithProgram>>
+        field = MutableStateFlow(emptyList())
+
     init {
         fetchMemberTable()
     }
@@ -46,6 +55,17 @@ class MembersViewModel(authRepo: AuthRepository, val memberRepo: MemberRepositor
     fun selectMember(member: Member) {
         println("Selected member: ${Json.encodeToString(member)}")
         currentMember.update { member }
+        fetchMemberOmissions()
+    }
+
+    private fun fetchMemberOmissions() {
+        viewModelScope.launch(Dispatchers.Default) {
+            val result = executeSupabaseAction {
+                DbResult.Success.WithContent(justificationRepository.getOmissionsByMember(currentMember.value!!.id))
+            }
+            if (result is DbResult.Success.WithContent<*>)
+                omittedPrograms.update { result.result as List<Justification.WithProgram> }
+        }
     }
 
     fun fetchMemberTable(query: String = "", orderColumn: MemberTableColumns? = null, ascending: Boolean = true) {
@@ -119,6 +139,20 @@ class MembersViewModel(authRepo: AuthRepository, val memberRepo: MemberRepositor
                 memberRepo.resetLeaderMFA(currentMember.value!!)
             }
             onResult(result)
+        }
+    }
+
+    fun justifyProgramOmission(programId: String) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val res = justificationRepository.createJustification(
+                programId,
+                currentMember.value!!.id,
+                userState.value.userOrNull!!.guard!!.id
+            )
+            if (res is DbResult.Success) {
+                fetchMemberOmissions()
+                fetchMemberTable()
+            }
         }
     }
 }

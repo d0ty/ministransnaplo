@@ -14,6 +14,7 @@ import io.github.jan.supabase.postgrest.rpc
 
 interface JustificationRepository {
     suspend fun getByProgram(programId: String): List<Justification.WithMember>
+    suspend fun getOmissionsByMember(memberId: String): List<Justification.WithProgram>
     suspend fun createJustification(programId: String, memberId: String, guardId: String): DbResult
     suspend fun deleteJustification(id: String): DbResult
 }
@@ -24,6 +25,13 @@ class SupabaseJustificationRepository(val supabase: SupabaseClient) : Justificat
             "get_justifications_for_program",
             mapOf("programId" to programId)
         ).decodeAs<List<Justification.WithMember>>()
+    }
+
+    override suspend fun getOmissionsByMember(memberId: String): List<Justification.WithProgram> {
+        return supabase.postgrest.rpc(
+            "get_justifications_by_member",
+            mapOf("memberId" to memberId)
+        ).decodeAs<List<Justification.WithProgram>>()
     }
 
     override suspend fun createJustification(

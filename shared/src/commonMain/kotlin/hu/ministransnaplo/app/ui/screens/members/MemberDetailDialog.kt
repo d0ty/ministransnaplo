@@ -27,11 +27,16 @@ import hu.ministransnaplo.app.ui.prompts.DestructivePromptRequests
 import hu.ministransnaplo.app.ui.prompts.EmailPrompt
 import hu.ministransnaplo.app.ui.prompts.EmailPromptRequests
 import hu.ministransnaplo.app.util.DbResult
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeComponents
+import kotlinx.datetime.format.FormatStringsInDatetimeFormats
+import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.serialization.Serializable
 
 @Serializable
 object MemberDetail : NavItem
 
+@OptIn(FormatStringsInDatetimeFormats::class)
 @Composable
 fun MemberDetailDialog(
     close: () -> Unit,
@@ -40,6 +45,7 @@ fun MemberDetailDialog(
 ) {
     var editing by remember { mutableStateOf(false) }
     val member by viewModel.currentMember.collectAsState()
+    val omittedPrograms by viewModel.omittedPrograms.collectAsState()
     LaunchedEffect("key") { viewModel.currentMember.collect { println(it?.rank) } }
 
     DialogContainer("${member!!.name} adatlapja", 500.dp, close, navigate, commands = {
@@ -126,21 +132,35 @@ fun MemberDetailDialog(
                 Spacer(Modifier.height(12.dp))
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth().defaultMinSize(250.dp)
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 200.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 2.dp)
-                    ) {
-                        Text("@MM.DD. HH:MM Program neve", fontSize = 12.sp)
-                        Image(getLucideCircleCheckBig(Color.White), null, Modifier.size(16.dp).clickable {
-                            // TODO: implement with the future program system
-                        })
+                    if (omittedPrograms.isEmpty()) {
+                        Box(Modifier.fillMaxWidth().defaultMinSize(minHeight = 200.dp)) {
+                            Text(
+                                "Nincsenek igazolatlan programok",
+                                fontSize = 16.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                        return@Column
+                    }
+                    val formatter = DateTimeComponents.Format { byUnicodePattern("yyyy.MM.dd. HH:mm") }
+                    omittedPrograms.forEach { omission ->
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 2.dp)
+                        ) {
+
+                            Text("${omission.start.format(formatter)} ${omission.title}")
+                            Image(getLucideCircleCheckBig(omission.getColor()), null, Modifier.size(16.dp).clickable {
+                                viewModel.justifyProgramOmission(omission.programId)
+                            })
+                        }
                     }
                 }
             }
         }
-
     }
 }
