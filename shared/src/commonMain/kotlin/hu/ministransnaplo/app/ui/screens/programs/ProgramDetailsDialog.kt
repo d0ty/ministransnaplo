@@ -96,7 +96,7 @@ fun ProgramDetailDialog(
                                 getLucideCircleCheckBig(justification.getColor()),
                                 null,
                                 Modifier.size(20.dp).clickable {
-                                    // TODO: implement with the future justification system
+                                    viewModel.toggleMemberJustification(justification.memberId)
                                 })
                         }
                     }

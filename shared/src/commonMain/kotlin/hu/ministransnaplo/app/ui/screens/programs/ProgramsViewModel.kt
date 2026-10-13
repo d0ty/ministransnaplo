@@ -119,14 +119,17 @@ class ProgramsViewModel(
 
     fun selectProgram(program: Program?) {
         currentProgram.update { program }
-        if (program != null) {
-            viewModelScope.launch {
-                val justifications = executeSupabaseAction {
-                    DbResult.Success.WithContent(justificationRepo.getByProgram(program.id))
-                }
-                if (justifications is DbResult.Success.WithContent<*>) {
-                    currentJustifications.update { justifications.result as List<Justification.WithMember> }
-                }
+        if (program != null) fetchCurrentJustifications()
+        else currentJustifications.update { emptyList() }
+    }
+
+    private fun fetchCurrentJustifications() {
+        viewModelScope.launch {
+            val justifications = executeSupabaseAction {
+                DbResult.Success.WithContent(justificationRepo.getByProgram(currentProgram.value!!.id))
+            }
+            if (justifications is DbResult.Success.WithContent<*>) {
+                currentJustifications.update { justifications.result as List<Justification.WithMember> }
             }
         }
     }
@@ -284,6 +287,27 @@ class ProgramsViewModel(
             }
             reload()
             onResult(result)
+        }
+    }
+
+    fun toggleMemberJustification(memberId: String) {
+        if (currentProgram.value == null) throw IllegalStateException("Can't toggle justification without a current program selected")
+        if (currentJustifications.value.isEmpty()) throw IllegalStateException("Can't toggle justification without loaded justifications")
+        viewModelScope.launch(Dispatchers.Default) {
+            val result = executeSupabaseAction {
+                val currentJustifications = currentJustifications.value
+                val existing = currentJustifications.find { it.memberId == memberId && it.justificationId != null }
+                if (existing != null) {
+                    TODO("Justification deletion")
+                } else {
+                    justificationRepo.createJustification(
+                        currentProgram.value!!.id,
+                        memberId,
+                        userState.value.userOrNull!!.guard!!.id
+                    )
+                }
+            }
+            if (result is DbResult.Success) fetchCurrentJustifications()
         }
     }
 }
