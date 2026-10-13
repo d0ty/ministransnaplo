@@ -18,11 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import hu.ministransnaplo.app.ui.*
 import hu.ministransnaplo.app.ui.icons.IconVariants
 import hu.ministransnaplo.app.ui.icons.lucide.LucideEllipsis
 import hu.ministransnaplo.app.ui.screens.LoggedIn
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 private fun MenuItem(navMenuItem: NavMenuItem, activeMenu: NavMenuItem, onNavigation: () -> Unit) {
@@ -58,7 +58,7 @@ data class AndroidNavContainerScope(val openSheet: () -> Unit)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AndroidNavContainer(
-    viewModel: AppViewModel = viewModel { AppViewModel() },
+    viewModel: AppViewModel = koinViewModel(),
     onNavigation: (NavItem) -> Unit,
     bottomSheet: @Composable ColumnScope.() -> Unit = {},
     content: @Composable AndroidNavContainerScope.() -> Unit,
