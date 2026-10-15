@@ -1,0 +1,106 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Create secrets.properties
+        run: |
+          printf 'SUPA_URL=%s\nSUPA_KEY=%s\n' "$SUPA_URL" "$SUPA_KEY" > secrets.properties
+        env:
+          SUPA_URL: ${{ secrets.SUPA_URL }}
+          SUPA_KEY: ${{ secrets.SUPA_KEY }}
+
+      - name: Decode keystore (optional)
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          fi
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build release APK
+        run: ./gradlew :androidApp:assembleRelease --no-daemon
+        env:
+          # Read these in your signingConfig via System.getenv(...)
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: androidApp/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  web:
+    name: Web build & deploy (Cloudflare Pages)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Create secrets.properties
+        run: |
+          printf 'SUPA_URL=%s\nSUPA_KEY=%s\n' "$SUPA_URL" "$SUPA_KEY" > secrets.properties
+        env:
+          SUPA_URL: ${{ secrets.SUPA_URL }}
+          SUPA_KEY: ${{ secrets.SUPA_KEY }}
+
+      - name: Cache Kotlin/JS node & yarn
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/nodejs
+            ~/.gradle/yarn
+            build/js/node_modules
+          key: kotlin-js-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'kotlin-js-store/yarn.lock') }}
+          restore-keys: kotlin-js-${{ runner.os }}-
+
+      - name: Build wasmJs distribution
+        run: ./gradlew :webApp:wasmJsBrowserDistribution --no-daemon
+
+      # SPA fallback so Navigation deep links / refreshes resolve to index.html
+      - name: Add SPA redirects
+        run: echo "/* /index.html 200" > webApp/build/dist/wasmJs/productionExecutable/_redirects
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy webApp/build/dist/wasmJs/productionExecutable --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main
