@@ -1,49 +1,334 @@
+/*
+ * Copyright 2026 doty and László Rab
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
+ */
+
+
 package hu.ministransnaplo.app
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.compose.*
+import androidx.navigation.toRoute
+import coil3.compose.setSingletonImageLoaderFactory
+import hu.ministransnaplo.app.models.AuthState
+import hu.ministransnaplo.app.models.MFAState
+import hu.ministransnaplo.app.models.Member
+import hu.ministransnaplo.app.models.Program
+import hu.ministransnaplo.app.ui.NavItem
+import hu.ministransnaplo.app.ui.Theme
+import hu.ministransnaplo.app.ui.prompts.*
+import hu.ministransnaplo.app.ui.screens.LoggedIn
+import hu.ministransnaplo.app.ui.screens.LoggedInScreen
+import hu.ministransnaplo.app.ui.screens.auth.Login
+import hu.ministransnaplo.app.ui.screens.auth.LoginScreen
+import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.ChallengeScreen
+import hu.ministransnaplo.app.ui.screens.auth.mfa.challenge.MFAChallenge
+import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.EnrollScreen
+import hu.ministransnaplo.app.ui.screens.auth.mfa.enroll.MFAEnroll
+import hu.ministransnaplo.app.ui.screens.members.*
+import hu.ministransnaplo.app.ui.screens.programs.*
+import hu.ministransnaplo.app.util.AppImageLoaderFactory
+import hu.ministransnaplo.app.util.DbResult
+import hu.ministransnaplo.app.util.SimpleNavType
+import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.nullable
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+import kotlin.reflect.typeOf
 
-import mininstransnaplo.shared.generated.resources.Res
-import mininstransnaplo.shared.generated.resources.compose_multiplatform
+@Serializable
+object Splash : NavItem
 
+@OptIn(AuthUiExperimental::class, ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
+    val navController = rememberNavController()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val viewModel: AppViewModel = koinViewModel()
+    val imageLoaderFactory = koinInject<AppImageLoaderFactory>()
+    setSingletonImageLoaderFactory { ctx ->
+        imageLoaderFactory.newImageLoader(ctx)
+    }
+
+
+    MaterialTheme(colorScheme = Theme.colorScheme) {
+        Scaffold(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
                 .safeContentPadding()
                 .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            contentColor = Color.White,
+            containerColor = Theme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+            NavHost(
+                navController = navController,
+                startDestination = Splash
+            ) {
+                composable<Splash> {
+                    Box(Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(Modifier.size(100.dp).align(Alignment.Center))
+                    }
+                }
+                composable<Login> {
+                    LoginScreen(onLoggedIn = {
+                        navController.navigate(it)
+                    })
+                }
+                composable<LoggedIn> {
+                    LoggedInScreen(onNavigation = {
+                        navController.navigate(it)
+                    })
+                }
+                composable<MFAEnroll> {
+                    EnrollScreen(onSucess = {
+                        navController.navigate(LoggedIn)
+                    })
+                }
+                composable<MFAChallenge> {
+                    ChallengeScreen(onSuccess = {
+                        navController.navigate(LoggedIn)
+                    })
+                }
+                navigation<MembersRoot>(startDestination = Members) {
+                    composable<Members> { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<MembersRoot>()
+                        }
+                        val sharedViewModel: MembersViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+                        MembersScreen(onNavigation = {
+                            navController.navigate(it)
+                        }, sharedViewModel)
+                    }
+                    dialog<NewMember>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<MembersRoot>()
+                        }
+                        val sharedViewModel: MembersViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+                        NewMemberDialog(
+                            close = { navController.popBackStack() },
+                            navigate = { navController.navigate(route = it) },
+                            showSnackbar = {
+                                sharedViewModel.viewModelScope.launch {
+                                    snackbarHostState.showSnackbar(it)
+                                }
+                            },
+                            viewModel = sharedViewModel
+                        )
+                    }
+                    dialog<MemberDetail>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile),
+                        typeMap = mapOf(
+                            typeOf<PromptResult?>() to SimpleNavType(PromptResult.serializer().nullable)
+                        )
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<MembersRoot>()
+                        }
+                        val sharedViewModel: MembersViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+                        val entry = navController.currentBackStackEntry
+                        LaunchedEffect(entry, sharedViewModel) {
+                            entry?.savedStateHandle?.getStateFlow<PromptResult?>("result", null)
+                                ?.collect { result ->
+                                    if (result == null) return@collect;
+
+                                    when (result) {
+                                        is PromptResult.Email -> {
+                                            when (result.request) {
+                                                EmailPromptRequests.PROMOTE_MEMBER ->
+                                                    sharedViewModel.inviteLeader(result.email) {
+                                                        when (it) {
+                                                            is DbResult.Success -> snackbarHostState.showSnackbar("${sharedViewModel.currentMember.value?.name} sikeresen előléptetve!")
+                                                            is DbResult.Failure -> snackbarHostState.showSnackbar("Hiba az előléptetés közben!")
+                                                        }
+                                                    }
+                                            }
+                                        }
+
+                                        is PromptResult.DestructiveAction -> {
+                                            when (result.request) {
+                                                DestructivePromptRequests.DELETE_MEMBER -> {
+                                                    sharedViewModel.deleteMember {
+                                                        when (it) {
+                                                            is DbResult.Success.WithContent<*> -> {
+                                                                val member: Member = it.result as Member
+                                                                snackbarHostState.showSnackbar("${member.name} sikeresen törölve")
+                                                            }
+
+                                                            else -> snackbarHostState.showSnackbar("Hiba a tag törlése közben!")
+                                                        }
+                                                    }
+                                                    navController.popBackStack()
+                                                }
+
+                                                DestructivePromptRequests.RESET_MEMBER_MFA -> {
+                                                    sharedViewModel.resetLeaderMFA {
+                                                        when (it) {
+                                                            is DbResult.Success -> snackbarHostState.showSnackbar("${sharedViewModel.currentMember.value?.name} 2FA kulcsai sikeresen visszaállítva!")
+                                                            is DbResult.Failure -> snackbarHostState.showSnackbar("Hiba a 2FA kulcsok visszaállítása közben!")
+                                                        }
+                                                    }
+                                                }
+
+                                                else -> {}
+                                            }
+                                        }
+                                    }
+
+                                    entry.savedStateHandle["result"] = null
+                                }
+                        }
+
+                        MemberDetailDialog(
+                            close = { navController.popBackStack() },
+                            navigate = { navController.navigate(it) },
+                            sharedViewModel
+                        )
+                    }
+
+                }
+                navigation<ProgramsRoot>(startDestination = Programs) {
+                    composable<Programs> { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<ProgramsRoot>()
+                        }
+                        val sharedViewModel: ProgramsViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+                        ProgramsScreen(onNavigation = {
+                            navController.navigate(it)
+                        }, sharedViewModel)
+                    }
+                    dialog<NewProgram>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<ProgramsRoot>()
+                        }
+                        val sharedViewModel: ProgramsViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+
+                        NewProgramDialog(
+                            close = { navController.popBackStack() },
+                            navigate = { navController.navigate(route = it) },
+                            showSnackbar = {
+                                sharedViewModel.viewModelScope.launch {
+                                    snackbarHostState.showSnackbar(it)
+                                }
+                            },
+                            viewModel = sharedViewModel
+                        )
+                    }
+                    dialog<ProgramDetails>(
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = !getPlatform().isMobile)
+                    ) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry<ProgramsRoot>()
+                        }
+                        val sharedViewModel: ProgramsViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+                        val entry = navController.currentBackStackEntry
+                        LaunchedEffect(entry, sharedViewModel) {
+                            entry?.savedStateHandle?.getStateFlow<PromptResult?>("result", null)
+                                ?.collect { result ->
+                                    println("prompt result: $result")
+                                    if (result == null || result !is PromptResult.DestructiveAction) return@collect;
+                                    if (result.request != DestructivePromptRequests.DELETE_PROGRAM && !result.confirmed) return@collect;
+                                    println("${sharedViewModel.currentProgram.value}")
+                                    sharedViewModel.deleteMember {
+                                        println(it)
+                                        when (it) {
+                                            is DbResult.Success.WithContent<*> -> {
+                                                val program = it.result as Program
+                                                snackbarHostState.showSnackbar("${program.title} sikeresen törölve")
+                                            }
+
+                                            else -> snackbarHostState.showSnackbar("Hiba a program törlése közben!")
+                                        }
+                                    }
+                                }
+                        }
+
+
+                        ProgramDetailDialog(
+                            close = {
+                                sharedViewModel.selectProgram(null)
+                                navController.popBackStack()
+                            },
+                            navigate = { navController.navigate(route = it) },
+                            viewModel = sharedViewModel
+                        )
+                    }
+
+                }
+
+                dialog<EmailPrompt>(
+                    typeMap = mapOf(
+                        typeOf<EmailPromptRequests>() to SimpleNavType(EmailPromptRequests.serializer()),
+                        typeOf<PromptResult>() to SimpleNavType(PromptResult.serializer())
+                    )
+                ) { backStackEntry ->
+                    val promptConfig: EmailPrompt = backStackEntry.toRoute()
+                    EmailPromptDialog(
+                        promptConfig,
+                        finish = {
+                            if (it !== null) navController.previousBackStackEntry?.savedStateHandle?.set("result", it)
+                            navController.popBackStack()
+                        }
+                    )
+                }
+                dialog<DestructiveActionPrompt>(
+                    typeMap = mapOf(
+                        typeOf<DestructivePromptRequests>() to SimpleNavType(DestructivePromptRequests.serializer()),
+                    )
+                ) { backStackEntry ->
+                    val promptConfig: DestructiveActionPrompt = backStackEntry.toRoute()
+                    DestructiveActionPromptDialog(
+                        promptConfig,
+                        finish = {
+                            navController.previousBackStackEntry?.savedStateHandle?.set("result", it)
+                            navController.popBackStack()
+                        }
+                    )
                 }
             }
         }
     }
+    LaunchedEffect(viewModel) {
+        viewModel.userState.collect {
+            when (it) {
+                is AuthState.Loading -> Unit
+                is AuthState.Unauthenticated -> navController.navigate(Login)
+                is AuthState.Authenticated -> {
+                    when (it.user.mfaState) {
+                        null -> Unit
+                        MFAState.ENROLL_REQUIRED -> navController.navigate(MFAEnroll)
+                        MFAState.CHALLENGE_REQUIRED -> navController.navigate(MFAChallenge)
+                        MFAState.VERIFIED -> navController.navigate(LoggedIn)
+                    }
+                }
+            }
+        }
+    }
+
 }

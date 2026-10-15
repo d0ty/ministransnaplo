@@ -1,8 +1,15 @@
+/*
+ * Copyright 2026 doty and László Rab
+ * Use of this source code is governed by the GNU General Public License that can be found at the LICENSE file
+ */
+
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.*
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -34,9 +41,15 @@ kotlin {
         }
     }
 
+    compilerOptions {
+        freeCompilerArgs.set(listOf("-Xexplicit-backing-fields"))
+    }
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.ktor.client.cio)
+            implementation(libs.koin.android)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -47,16 +60,67 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.compose.navigation)
+            implementation(libs.supabase.postgrest)
+            implementation(libs.supabase.auth)
+            implementation(libs.supabase.functions)
+            implementation(libs.supabase.storage)
+            implementation(libs.supabase.compose.auth.ui)
+            implementation(libs.supabase.coil3.integration)
+            implementation(libs.coil3.svg)
+            implementation(libs.coil3.compose)
+            implementation(libs.coil3.ktor)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.windegde.table)
+            runtimeOnly(libs.kotlinx.datetime)
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         jsMain.dependencies {
             implementation(libs.wrappers.browser)
+            implementation(libs.ktor.client.js)
         }
     }
 }
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+tasks.register("generateSecretsClass") {
+    notCompatibleWithConfigurationCache("")
+    doLast {
+        val file = File("$projectDir/src/commonMain/kotlin/hu/ministransnaplo/app/Secrets.kt")
+        print(file.absolutePath)
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            package hu.ministransnaplo.app 
+            
+            object Secrets {
+                val supa_url: String = "${getSecret("SUPA_URL")}"
+                val supa_key: String = "${getSecret("SUPA_KEY")}"
+            }
+        """.trimIndent()
+        )
+    }
+}
+
+tasks.named("generateComposeResClass") {
+    dependsOn("generateSecretsClass")
+}
+
+fun getSecret(propertyName: String): String {
+    val secretsFile = rootProject.file("secrets.properties")
+    if (secretsFile.exists()) {
+        val properties = Properties()
+        secretsFile.inputStream().use { properties.load(it) }
+        val property = properties.getProperty(propertyName)
+        return property
+    } else return "invalid"
 }
