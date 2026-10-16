@@ -13,5 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
 open class AppViewModel(val authRepo: AuthRepository) : ViewModel() {
     val userState: StateFlow<AuthState> = authRepo.authState
 
+    /*init {
+        println("VM repo=${authRepo.hashCode()}")
+    }*/
+
     suspend fun singOut() = authRepo.singOut()
 }

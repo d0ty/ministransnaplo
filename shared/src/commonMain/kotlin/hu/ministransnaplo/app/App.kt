@@ -45,6 +45,7 @@ import hu.ministransnaplo.app.util.AppImageLoaderFactory
 import hu.ministransnaplo.app.util.DbResult
 import hu.ministransnaplo.app.util.SimpleNavType
 import io.github.jan.supabase.compose.auth.ui.annotations.AuthUiExperimental
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
@@ -66,7 +67,6 @@ fun App() {
     setSingletonImageLoaderFactory { ctx ->
         imageLoaderFactory.newImageLoader(ctx)
     }
-
 
     MaterialTheme(colorScheme = Theme.colorScheme) {
         Scaffold(
@@ -314,19 +314,28 @@ fun App() {
             }
         }
     }
-    LaunchedEffect(viewModel) {
-        viewModel.userState.collect {
-            when (it) {
-                is AuthState.Loading -> Unit
-                is AuthState.Unauthenticated -> navController.navigate(Login)
-                is AuthState.Authenticated -> {
-                    when (it.user.mfaState) {
-                        null -> Unit
-                        MFAState.ENROLL_REQUIRED -> navController.navigate(MFAEnroll)
-                        MFAState.CHALLENGE_REQUIRED -> navController.navigate(MFAChallenge)
-                        MFAState.VERIFIED -> navController.navigate(LoggedIn)
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.first()
+        viewModel.userState.collect { authState ->
+            when (authState) {
+                is AuthState.Authenticated -> navController.navigate(
+                    when (authState.userOrNull!!.mfaState) {
+                        MFAState.ENROLL_REQUIRED -> MFAEnroll
+                        MFAState.CHALLENGE_REQUIRED -> MFAChallenge
+                        MFAState.VERIFIED -> LoggedIn
+                        null -> LoggedIn
                     }
+                ) {
+                    popUpTo<Splash> { inclusive = true }
+                    launchSingleTop = true
                 }
+
+                is AuthState.Unauthenticated -> navController.navigate(Login) {
+                    popUpTo(navController.currentDestination?.parent?.id ?: return@navigate) { inclusive = true }
+                    launchSingleTop = true
+                }
+
+                AuthState.Loading -> {}
             }
         }
     }

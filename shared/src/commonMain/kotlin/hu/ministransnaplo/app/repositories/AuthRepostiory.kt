@@ -12,13 +12,12 @@ import io.github.jan.supabase.auth.mfa.AuthenticatorAssuranceLevel
 import io.github.jan.supabase.auth.mfa.FactorType
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 
 interface AuthRepository {
     val authState: StateFlow<AuthState>
@@ -33,35 +32,44 @@ interface AuthRepository {
 }
 
 class SupabaseAuthRepository(val supabase: SupabaseClient, scope: CoroutineScope) : AuthRepository {
-    override val authState: StateFlow<AuthState>
-        field = MutableStateFlow<AuthState>(AuthState.Loading)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val authState: StateFlow<AuthState> = supabase.auth.sessionStatus
+        //.onEach { println("AUTH 1 raw=$it") }
+        .distinctUntilChanged { old, new ->
+            when {
+                old is SessionStatus.Authenticated && new is SessionStatus.Authenticated ->
+                    old.session.user?.id == new.session.user?.id
 
-    init {
-        scope.launch {
-            supabase.auth.sessionStatus.collect { status ->
-                val state = when (status) {
-                    is SessionStatus.Initializing -> AuthState.Loading
-                    is SessionStatus.Authenticated -> {
-                        val guard = supabase.postgrest.rpc("get_my_guard").decodeAs<Guard>()
-                        AuthState.Authenticated(
-                            User(
-                                mfaState = MFAState.fromMFALevel(supabase.auth.mfa.getAuthenticatorAssuranceLevel()),
-                                profile = status.session.user?.id?.let { value ->
-                                    supabase.from("member").select { filter { eq("login", value) } }
-                                        .decodeSingle<Member?>()
-                                },
-                                email = status.session.user?.email ?: "email@address",
-                                userId = status.session.user?.id ?: "userId",
-                                guard = guard
-                            )
-                        )
-                    }
-
-                    else -> AuthState.Unauthenticated
-                }
-                authState.update { state }
+                else -> old::class == new::class
             }
         }
+        .mapLatest { status ->
+            //println("AUTH 2 mapping=$status")
+            when (status) {
+                is SessionStatus.Initializing -> AuthState.Loading
+                is SessionStatus.Authenticated -> {
+                    val user = status.session.user
+                    if (user == null) AuthState.Unauthenticated
+                    else AuthState.Authenticated(loadUser(user))
+                }
+
+                else -> AuthState.Unauthenticated
+            }
+        }
+        //.onEach { println("AUTH 3 mapped=$it") }
+        //.catch { println("AUTH ERROR $it"); emit(AuthState.Unauthenticated) }
+        .stateIn(scope, SharingStarted.Eagerly, AuthState.Loading)
+
+    private suspend fun loadUser(user: UserInfo): User {
+        val guard = supabase.postgrest.rpc("get_my_guard").decodeAs<Guard>()
+        return User(
+            mfaState = MFAState.fromMFALevel(supabase.auth.mfa.getAuthenticatorAssuranceLevel()),
+            profile = supabase.from("member").select { filter { eq("login", user.id) } }
+                .decodeSingle<Member?>(),
+            email = user.email ?: "email@address",
+            userId = user.id,
+            guard = guard
+        )
     }
 
     override suspend fun signIn(email: String, password: String) {
